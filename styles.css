@@ -195,7 +195,14 @@ main {
 }
 
 .paste-csv-box {
+    margin-top: 12px;
     text-align: left;
+}
+
+.import-action-buttons {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
 }
 
 .error-text {

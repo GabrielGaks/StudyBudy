@@ -25,7 +25,11 @@ const btnGeneratePrompt = document.getElementById('btn-generate-prompt');
 const promptResultContainer = document.getElementById('prompt-result-container');
 const promptResult = document.getElementById('prompt-result');
 const btnCopyPrompt = document.getElementById('btn-copy-prompt');
+const csvImportActions = document.getElementById('csv-import-actions');
 const csvInput = document.getElementById('csv-input');
+const btnUploadCsv = document.getElementById('btn-upload-csv');
+const btnShowPasteCsv = document.getElementById('btn-show-paste-csv');
+const pasteCsvBox = document.getElementById('paste-csv-box');
 const csvTextInput = document.getElementById('csv-text-input');
 const btnImportCsvText = document.getElementById('btn-import-csv-text');
 const btnGotoAi = document.getElementById('btn-goto-ai');
@@ -77,9 +81,7 @@ function attachListeners() {
     });
 
     btnGotoAi.addEventListener('click', () => showScreen('ai'));
-    btnTogglePrompt.addEventListener('click', () => {
-        promptContainer.classList.toggle('hidden');
-    });
+    btnTogglePrompt.addEventListener('click', openPromptGenerator);
     btnGeneratePrompt.addEventListener('click', generateCSVPrompt);
     promptQType.addEventListener('change', () => {
         if (!promptResultContainer.classList.contains('hidden')) {
@@ -88,6 +90,8 @@ function attachListeners() {
     });
 
     btnCopyPrompt.addEventListener('click', copyCSVPrompt);
+    btnUploadCsv.addEventListener('click', () => csvInput.click());
+    btnShowPasteCsv.addEventListener('click', togglePasteCSVBox);
     csvInput.addEventListener('change', handleCSVUpload);
     btnImportCsvText.addEventListener('click', handleCSVTextImport);
     btnGenerateAi.addEventListener('click', handleAIGeneration);
@@ -153,6 +157,19 @@ function saveSettings() {
 }
 
 // --- CSV HANDLING ---
+function openPromptGenerator() {
+    promptContainer.classList.remove('hidden');
+    btnTogglePrompt.classList.add('hidden');
+    promptTheme.focus();
+}
+
+function togglePasteCSVBox() {
+    pasteCsvBox.classList.toggle('hidden');
+    btnShowPasteCsv.textContent = pasteCsvBox.classList.contains('hidden')
+        ? "Colar CSV"
+        : "Ocultar Área de Colagem";
+}
+
 function generateCSVPrompt() {
   const theme = promptTheme.value.trim();
   const content = promptContent.value.trim();
@@ -249,6 +266,9 @@ Gere exatamente ${amountText} linhas de dados após o cabeçalho. Coluna 'tipo' 
  
   promptResult.value = promptStr;
   promptResultContainer.classList.remove("hidden");
+  csvImportActions.classList.remove("hidden");
+  pasteCsvBox.classList.add("hidden");
+  btnShowPasteCsv.textContent = "Colar CSV";
 }
 
 
@@ -323,6 +343,14 @@ function sanitizeCSVText(text) {
     if (fencedMatch) {
         normalized = fencedMatch[1].trim();
     }
+
+    // Normalize common AI typography so pasted CSV still matches the parser.
+    normalized = normalized
+        .replace(/[\u201C\u201D]/g, '"')
+        .replace(/[\u2018\u2019]/g, "'");
+
+    // Remove common wrapper leftovers when the model appends JSON/braces after the CSV.
+    normalized = normalized.replace(/[}\]]+\s*$/, '').trim();
 
     return normalized;
 }
