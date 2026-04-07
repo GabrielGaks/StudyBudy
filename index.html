@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quiz Master AI</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <header>
+        <div class="header-container">
+            <h1>Quiz<span>Master</span></h1>
+            <p>O seu gerador de conhecimento</p>
+        </div>
+    </header>
+
+    <main id="app">
+        <!-- SCREEN: HOME -->
+        <section id="screen-home" class="screen active">
+            <h2>Bem-vindo! Escolha a fonte das perguntas</h2>
+            
+            <div class="cards-container">
+                <!-- CSV Option -->
+                <div class="card" id="card-csv" style="justify-content: flex-start;">
+                    <div class="card-icon">📁</div>
+                    <h3>Upload de CSV</h3>
+                    <p>Importe suas perguntas usando um arquivo CSV padronizado ou cole o CSV gerado pela IA.</p>
+                    
+                    <input type="file" id="csv-input" accept=".csv" class="hidden">
+                    <button class="btn btn-primary full-width" onclick="document.getElementById('csv-input').click()">Upload do Arquivo CSV</button>
+                    <div class="csv-divider">ou</div>
+                    <div class="paste-csv-box full-width">
+                        <textarea id="csv-text-input" rows="7" placeholder="Cole aqui o CSV gerado pela IA, incluindo o cabeçalho."></textarea>
+                        <button class="btn btn-outline mt-2 full-width" id="btn-import-csv-text">Usar CSV Colado</button>
+                    </div>
+                    
+                    <button class="btn btn-outline mt-2 full-width" id="btn-toggle-prompt">Gerar Prompt p/ IA Externo</button>
+                    <div id="csv-error" class="error-text hidden"></div>
+                    
+                    <div id="prompt-generator-container" class="hidden prompt-box">
+                        <h4>Gerador de Prompt para CSV</h4>
+                        
+                        <div class="form-group row-group" style="margin-bottom: 12px; display: flex; gap: 10px;">
+                            <input type="text" id="prompt-theme" placeholder="Tema Geral (ex: Biologia)" style="flex: 2;">
+                            <input type="number" id="prompt-csv-amount" title="Qtd. de Perguntas" value="10" min="1" max="50" style="flex: 1;">
+                        </div>
+                        
+                        <div class="form-group" style="margin-bottom: 12px;">
+                            <select id="prompt-q-type" class="full-width" style="padding: 10px; border-radius: 8px; border: 1px solid var(--border);">
+                                <option value="objetivas">Apenas Objetivas</option>
+                                <option value="discursivas">Apenas Discursivas</option>
+                                <option value="mistas">Mistas (Objetivas e Discursivas)</option>
+                            </select>
+                        </div>
+                        
+                        <div class="form-group" style="margin-bottom: 15px;">
+                            <textarea id="prompt-content" placeholder="Especifique o Conteúdo (ex: Mitose e meiose)" rows="2"></textarea>
+                        </div>
+                        
+                        <button class="btn btn-primary full-width" id="btn-generate-prompt">Montar Prompt</button>
+                        
+                        <div id="prompt-result-container" class="hidden mt-4">
+                            <textarea id="prompt-result" rows="4" readonly class="readonly-textarea"></textarea>
+                            <button class="btn btn-outline full-width mt-2" id="btn-copy-prompt">📋 Copiar para Prancheta</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- AI Option -->
+                <div class="card" id="card-ai">
+                    <div class="card-icon">🤖</div>
+                    <h3>Gerar com IA</h3>
+                    <p>Cole um texto e nossa IA criará o quiz para você automaticamente.</p>
+                    <button class="btn btn-primary" id="btn-goto-ai">Inserir Texto</button>
+                </div>
+            </div>
+        </section>
+
+        <!-- SCREEN: AI INPUT -->
+        <section id="screen-ai" class="screen hidden">
+            <button class="btn-icon btn-back" data-target="home">← Voltar</button>
+            <h2>Gerador de Perguntas IA</h2>
+            <p>Cole o conteúdo de estudo abaixo para gerar perguntas.</p>
+            
+            <div class="form-group">
+                <textarea id="ai-context" placeholder="Cole o texto base para as perguntas aqui..." rows="6"></textarea>
+            </div>
+            
+            <div class="form-group row-group">
+                <label for="ai-q-amount">Quantidade de perguntas:</label>
+                <input type="number" id="ai-q-amount" min="1" max="20" value="5">
+            </div>
+
+            <div id="ai-error" class="error-text hidden"></div>
+
+            <button class="btn btn-primary full-width" id="btn-generate-ai">Gerar Perguntas (Simulação)</button>
+            
+            <!-- Loading Overlay -->
+            <div id="ai-loading" class="loading-overlay hidden">
+                <div class="spinner"></div>
+                <p>Analisando texto e gerando perguntas...</p>
+            </div>
+        </section>
+
+        <!-- SCREEN: CONFIG -->
+        <section id="screen-config" class="screen hidden">
+            <button class="btn-icon btn-back" data-target="home">← Voltar Home</button>
+            <h2>Configurações do Quiz</h2>
+            
+            <div class="config-panel">
+                <div class="config-item">
+                    <label>
+                        <input type="checkbox" id="cfg-immediate">
+                        Mostrar resposta correta imediatamente após escolha
+                    </label>
+                </div>
+                
+                <div class="config-item">
+                    <label>
+                        <input type="checkbox" id="cfg-shuffle-options" checked>
+                        Embaralhar as alternativas
+                    </label>
+                </div>
+                
+                <div class="config-item">
+                    <label>
+                        <input type="checkbox" id="cfg-allow-back" checked>
+                        Permitir voltar para a pergunta anterior
+                    </label>
+                </div>
+
+                <div class="config-item">
+                    <label for="cfg-mode">Modo de Exibição:</label>
+                    <select id="cfg-mode">
+                        <option value="single">Uma pergunta por tela</option>
+                        <option value="all">Todas as perguntas na mesma tela</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="actions">
+                <button class="btn btn-primary big-btn" id="btn-start-quiz">Começar Quiz 🔥</button>
+            </div>
+        </section>
+
+        <!-- SCREEN: QUIZ (Single Mode) -->
+        <section id="screen-quiz" class="screen hidden">
+            <button class="btn-icon btn-back" data-target="home" onclick="if(!confirm('Tem certeza? Seu progresso atual será perdido.')) event.stopPropagation();">← Abandonar Quiz</button>
+            <div class="quiz-header">
+                <div class="progress-bar">
+                    <div class="progress-fill" id="progress-fill"></div>
+                </div>
+                <div class="progress-text">
+                    Pergunta <span id="q-current">1</span> de <span id="q-total">10</span>
+                </div>
+            </div>
+
+            <!-- Single mode container -->
+            <div id="quiz-single-container">
+                <div class="question-container">
+                    <div id="single-badge-container"></div>
+                    <h3 id="question-text">Texto da pergunta aqui...</h3>
+                    <div class="options-container" id="options-container">
+                        <!-- Options injected by JS -->
+                    </div>
+                    
+                    <div id="explanation-container" class="explanation-box hidden">
+                        <h4>Explicação:</h4>
+                        <p id="explanation-text"></p>
+                    </div>
+                </div>
+
+                <div class="quiz-actions">
+                    <button class="btn btn-outline" id="btn-prev-q">Anterior</button>
+                    <button class="btn btn-primary" id="btn-next-q">Próxima</button>
+                    <button class="btn btn-success hidden" id="btn-finish-q">Finalizar Quiz</button>
+                </div>
+            </div>
+            
+            <!-- All mode container (will be dynamically populated and shown if mode is 'all') -->
+            <div id="quiz-all-container" class="hidden">
+                <div id="all-questions-list"></div>
+                <button class="btn btn-success full-width mt-4" id="btn-submit-all">Finalizar Quiz Completo</button>
+            </div>
+        </section>
+
+        <!-- SCREEN: RESULTS -->
+        <section id="screen-result" class="screen hidden">
+            <button class="btn-icon btn-back" data-target="home">← Voltar Home</button>
+            <h2>Resultado Final</h2>
+            
+            <div class="score-summary">
+                <div class="score-card type-total">
+                    <h4>Total</h4>
+                    <span id="res-total">10</span>
+                </div>
+                <div class="score-card type-correct">
+                    <h4>Acertos</h4>
+                    <span id="res-correct">8</span>
+                </div>
+                <div class="score-card type-incorrect">
+                    <h4>Erros</h4>
+                    <span id="res-incorrect">2</span>
+                </div>
+                <div class="score-card type-percent">
+                    <h4>Aproveitamento</h4>
+                    <span id="res-percent">80%</span>
+                </div>
+            </div>
+
+            <h3 class="mt-4">Detalhes das Respostas:</h3>
+            <div class="review-list" id="review-list">
+                <!-- Review items injected by JS -->
+            </div>
+
+            <div class="actions center mt-4" style="display: flex; flex-direction: column; gap: 10px; align-items: center;">
+                <button class="btn btn-success full-width hidden" id="btn-eval-discursive">Obter Prompt de Avaliação das Discursivas</button>
+                <div style="display: flex; gap: 10px;">
+                    <button class="btn btn-primary" id="btn-redo-quiz">Refazer Mesmo Quiz</button>
+                    <button class="btn btn-outline" id="btn-new-quiz">Novo Quiz</button>
+                </div>
+            </div>
+        </section>
+
+    </main>
+    
+    <script src="script.js"></script>
+</body>
+</html>
