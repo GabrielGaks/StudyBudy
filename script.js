@@ -168,7 +168,7 @@ function generateCSVPrompt() {
   const theme = promptTheme.value.trim();
   const content = promptContent.value.trim();
   const qType = promptQType ? promptQType.value : "objetivas";
-  const amount = promptCsvAmount
+  const questionCount = promptCsvAmount
     ? parseInt(promptCsvAmount.value) || 10
     : 10;
 
@@ -277,7 +277,7 @@ function generateCSVPrompt() {
         "Comprimento similar entre as opções (±20%). Distribuir a resposta correta entre A-D.",
         "Proibido: 'Todas/Nenhuma das anteriores' ou combinações.",
         "'resposta_correta' = apenas a letra (A, B, C ou D).",
-        "Palavras proibidas nas alternativas: " + proibicoes_linguagem.join(", ") + ". Evitar negações fortes.",
+        "Palavras proibidas nas alternativas (ver campo proibicoes_linguagem). Evitar negações fortes.",
         "Consistência de domínio: todas as 4 alternativas no mesmo contexto conceitual e nível de abstração.",
         "Paralelismo e densidade técnica: mesma estrutura gramatical, mesmo nível de detalhe, ao menos 1 termo técnico em cada alternativa.",
         "Anti-pistas: proibido que a correta seja a única com palavra técnica, número, exemplo ou formalismo.",
@@ -309,7 +309,7 @@ function generateCSVPrompt() {
     contexto: {
       tema_central: theme || "Conhecimentos Gerais",
       conteudo_especifico: content || "Abordagem ampla do tema",
-      quantidade_questoes: amount,
+      quantidade_questoes: questionCount,
       tipo_questoes: qType
     },
     regras_por_tipo,
@@ -338,11 +338,12 @@ function generateCSVPrompt() {
       separador: ",",
       campos_com_virgula_ou_quebra_de_linha: "envolver em aspas duplas",
       cabecalho_obrigatorio: "pergunta,opcao_a,opcao_b,opcao_c,opcao_d,resposta_correta,explicacao,tema,nivel,tipo",
-      quantidade_linhas_de_dados: amount,
+      quantidade_linhas_de_dados: questionCount,
       valores_validos_coluna_tipo: ["objetiva", "discursiva"]
     }
   };
 
+  // Indented with 2 spaces for human readability in the UI prompt field
   promptResult.value = JSON.stringify(promptObj, null, 2);
   promptResultContainer.classList.remove("hidden");
   btnGoCsvImport.classList.remove("hidden");
