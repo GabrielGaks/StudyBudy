@@ -192,7 +192,30 @@ function generateCSVPrompt() {
 - PROIBIDO usar: "Todas as anteriores", "Nenhuma das anteriores", "A e B estão corretas", ou qualquer variação combinatória.
 - PROIBIDO que a alternativa correta seja sistematicamente mais longa ou mais detalhada que as demais.
 - Distribua a posição da resposta correta de forma EQUILIBRADA entre A, B, C e D ao longo do CSV (não concentre em uma única letra).
-- A coluna 'resposta_correta' deve conter APENAS a letra maiúscula: A, B, C ou D.`;
+- A coluna 'resposta_correta' deve conter APENAS a letra maiúscula: A, B, C ou D.
+
+### PROIBIÇÕES DE LINGUAGEM (CRÍTICO)
+É PROIBIDO usar nas alternativas (A-D) e também na explicação qualquer termo de exclusão/absolutismo que entregue a resposta, incluindo:
+"apenas", "somente", "só", "unicamente", "exclusivamente", "exceto", "a única", "sempre", "nunca", "jamais",
+"obrigatoriamente", "necessariamente", "proibido", "vedado", "correta", "incorreta", "errada", "todas", "nenhuma".
+Também é PROIBIDO estruturar opções como "não é X", "não pode", "não ocorre", "não existe" (negações fortes).
+Prefira formulações afirmativas e plausíveis.
+
+### PARALELISMO (OBRIGATÓRIO)
+As 4 alternativas devem ter:
+- Mesma estrutura gramatical (ex.: todas começam com verbo no infinitivo, ou todas são frases nominais).
+- Mesmo nível de detalhe e tom (técnico/coloquial).
+- Mesmo "tipo" de afirmação (todas descrevem causa, ou todas descrevem consequência, etc).
+
+### PADRÕES DE DISTRAÇÃO (use 3 dos 4 por questão)
+Crie alternativas erradas usando estes padrões (sem soar absurda):
+1) Termo correto + relação incorreta (mistura conceito certo com causa/efeito errados).
+2) Generalização plausível (afirma algo que ocorre em muitos casos, mas não no caso do enunciado).
+3) Confusão entre conceitos "vizinhos" (ex.: método vs ferramenta, causa vs correlação, sintoma vs diagnóstico).
+4) Detalhe técnico deslocado (traz um detalhe real do tema, mas aplicado ao contexto errado do enunciado).
+
+### ALTERNATIVA QUASE CORRETA (OBRIGATÓRIO)
+Em cada questão, inclua 1 alternativa "quase correta": ela deve apresentar raciocínio correto ou premissa válida, mas conter UM detalhe sutil inconsistente com o enunciado (ex.: escopo incorreto, contexto trocado, relação causa-efeito invertida, ou pressuposto correto aplicado à situação errada).`;
   } else if (qType === "discursivas") {
     typeInstructions = `
 ## TIPO OBRIGATÓRIO: 100% DISCURSIVAS (tipo = "discursiva")
@@ -213,6 +236,10 @@ Alterne entre os dois tipos ao longo do CSV.
 - Todas as opções com comprimento similar. Distribua a resposta correta entre A-D.
 - PROIBIDO: "Todas/Nenhuma das anteriores" ou combinações.
 - 'resposta_correta' = apenas a letra (A, B, C ou D).
+- PROIBIÇÕES DE LINGUAGEM: não use "apenas", "somente", "só", "unicamente", "exclusivamente", "exceto", "a única", "sempre", "nunca", "jamais", "obrigatoriamente", "necessariamente", "proibido", "vedado", "correta", "incorreta", "errada", "todas", "nenhuma" nas alternativas. Evite negações fortes ("não é X", "não pode", "não ocorre").
+- PARALELISMO: mesma estrutura gramatical, mesmo nível de detalhe e mesmo tipo de afirmação em todas as 4 opções.
+- PADRÕES DE DISTRAÇÃO (use 3 dos 4): 1) termo correto + relação incorreta; 2) generalização plausível; 3) confusão entre conceitos vizinhos; 4) detalhe técnico deslocado.
+- Inclua 1 alternativa "quase correta" (raciocínio ou premissa válida, mas com UM detalhe sutil inconsistente: escopo, contexto ou relação causa-efeito errado).
  
 ### Para discursivas (tipo = "discursiva"):
 - Colunas opcao_a até resposta_correta DEVEM FICAR VAZIAS.
@@ -240,7 +267,12 @@ Aplique a Taxonomia de Bloom revisada para distribuir as questões entre TODOS e
 1. PREFIRA enunciados contextualizados com cenários, situações-problema ou estudos de caso breves em vez de perguntas diretas tipo "O que é X?".
 2. O enunciado deve ser AUTOSSUFICIENTE — o aluno não deve precisar de material externo para responder.
 3. Use linguagem formal, clara e sem ambiguidades. Evite duplas negativas.
-4. A coluna 'explicacao' deve justificar POR QUE a resposta correta está certa E por que cada distrator está errado (para objetivas), ou listar os critérios de correção (para discursivas).
+4. A coluna 'explicacao' para questões objetivas deve ser NEUTRA E CONCEITUAL:
+   - Descreva o raciocínio correto e o conceito-chave envolvido.
+   - NÃO cite letras (A/B/C/D).
+   - NÃO diga "a correta é..." nem explique por que as outras estão erradas.
+   - NÃO use palavras de exclusão/absolutismo (lista acima).
+   Para discursivas, liste os critérios de correção esperados.
 5. A coluna 'nivel' deve conter exatamente um destes valores em minúsculas: "facil", "medio" ou "dificil". Distribua de forma balanceada.
  
 ## ANTIPADRÕES PROIBIDOS
