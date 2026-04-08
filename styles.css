@@ -489,6 +489,55 @@ textarea:focus, input:focus, select:focus {
 
 @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
 
+.btn-link {
+    background: none;
+    border: none;
+    color: var(--primary);
+    cursor: pointer;
+    font-size: 0.95rem;
+    font-weight: 500;
+    padding: 5px 0;
+    text-decoration: underline;
+    transition: var(--transition);
+    display: block;
+    text-align: center;
+    width: 100%;
+}
+
+.btn-link:hover {
+    color: var(--primary-hover);
+}
+
+.csv-requirements {
+    background: #F9FAFB;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 15px 20px;
+    margin-bottom: 10px;
+    font-size: 0.9rem;
+    color: var(--text-sec);
+}
+
+.csv-requirements p {
+    margin-bottom: 8px;
+    color: var(--text-main);
+}
+
+.csv-requirements ul {
+    padding-left: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.csv-requirements code {
+    background: var(--border);
+    padding: 1px 5px;
+    border-radius: 4px;
+    font-size: 0.85rem;
+    color: var(--text-main);
+}
+
 /* Mobile logic */
 @media (max-width: 600px) {
     .cards-container { grid-template-columns: 1fr; }

@@ -15,8 +15,6 @@ const state = {
 const screens = document.querySelectorAll('.screen');
 
 // Buttons / Interactions
-const btnTogglePrompt = document.getElementById('btn-toggle-prompt');
-const promptContainer = document.getElementById('prompt-generator-container');
 const promptTheme = document.getElementById('prompt-theme');
 const promptCsvAmount = document.getElementById('prompt-csv-amount');
 const promptQType = document.getElementById('prompt-q-type');
@@ -25,7 +23,7 @@ const btnGeneratePrompt = document.getElementById('btn-generate-prompt');
 const promptResultContainer = document.getElementById('prompt-result-container');
 const promptResult = document.getElementById('prompt-result');
 const btnCopyPrompt = document.getElementById('btn-copy-prompt');
-const csvImportActions = document.getElementById('csv-import-actions');
+const btnGoCsvImport = document.getElementById('btn-go-csv-import');
 const csvInput = document.getElementById('csv-input');
 const btnUploadCsv = document.getElementById('btn-upload-csv');
 const btnShowPasteCsv = document.getElementById('btn-show-paste-csv');
@@ -81,7 +79,8 @@ function attachListeners() {
     });
 
     btnGotoAi.addEventListener('click', () => showScreen('ai'));
-    btnTogglePrompt.addEventListener('click', openPromptGenerator);
+    document.getElementById('btn-start-csv').addEventListener('click', () => showScreen('csv-prompt'));
+    document.getElementById('btn-skip-to-import').addEventListener('click', () => showScreen('csv-import'));
     btnGeneratePrompt.addEventListener('click', generateCSVPrompt);
     promptQType.addEventListener('change', () => {
         if (!promptResultContainer.classList.contains('hidden')) {
@@ -90,6 +89,7 @@ function attachListeners() {
     });
 
     btnCopyPrompt.addEventListener('click', copyCSVPrompt);
+    btnGoCsvImport.addEventListener('click', () => showScreen('csv-import'));
     btnUploadCsv.addEventListener('click', () => csvInput.click());
     btnShowPasteCsv.addEventListener('click', togglePasteCSVBox);
     csvInput.addEventListener('change', handleCSVUpload);
@@ -157,12 +157,6 @@ function saveSettings() {
 }
 
 // --- CSV HANDLING ---
-function openPromptGenerator() {
-    promptContainer.classList.remove('hidden');
-    btnTogglePrompt.classList.add('hidden');
-    promptTheme.focus();
-}
-
 function togglePasteCSVBox() {
     pasteCsvBox.classList.toggle('hidden');
     btnShowPasteCsv.textContent = pasteCsvBox.classList.contains('hidden')
@@ -266,7 +260,7 @@ Gere exatamente ${amountText} linhas de dados após o cabeçalho. Coluna 'tipo' 
  
   promptResult.value = promptStr;
   promptResultContainer.classList.remove("hidden");
-  csvImportActions.classList.remove("hidden");
+  btnGoCsvImport.classList.remove("hidden");
   pasteCsvBox.classList.add("hidden");
   btnShowPasteCsv.textContent = "Colar CSV";
 }
@@ -449,7 +443,7 @@ async function handleAIGeneration() {
 
 async function callHuggingFaceAPI(text, amount) {
     // Insira seu Token (Access Token) do Hugging Face. (Geralmente começa com hf_)
-    const HF_TOKEN = "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";
+    const HF_TOKEN = "YOUR_HUGGINGFACE_TOKEN_HERE";
 
     // Modelo roteado solicitado pelo usuário
     const MODEL = "google/gemma-4-31B-it:fastest";
