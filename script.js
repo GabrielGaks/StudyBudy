@@ -180,54 +180,77 @@ function generateCSVPrompt() {
   // ── Bloco de instruções por tipo ──────────────────────────────────
   let typeInstructions = "";
  
-  if (qType === "objetivas") {
-    typeInstructions = `
+  
+if (qType === "objetivas") {
+  typeInstructions = `
 ## TIPO OBRIGATÓRIO: 100% MÚLTIPLA ESCOLHA (tipo = "objetiva")
 É PROIBIDO gerar questões discursivas.
- 
-### Regras para alternativas (distratores):
+
+### Regras estruturais (OBRIGATÓRIO)
 - Cada questão DEVE ter exatamente 4 opções (A, B, C, D) com UMA ÚNICA correta.
-- Os distratores (alternativas erradas) devem representar ERROS CONCEITUAIS REAIS que um aluno cometeria — não invente opções absurdas ou desconexas.
-- Todas as 4 opções devem ter comprimento textual similar (±20% de caracteres).
-- PROIBIDO usar: "Todas as anteriores", "Nenhuma das anteriores", "A e B estão corretas", ou qualquer variação combinatória.
-- PROIBIDO que a alternativa correta seja sistematicamente mais longa ou mais detalhada que as demais.
-- Distribua a posição da resposta correta de forma EQUILIBRADA entre A, B, C e D ao longo do CSV (não concentre em uma única letra).
+- PROIBIDO usar: "Todas as anteriores", "Nenhuma das anteriores", "A e B estão corretas", ou variações.
 - A coluna 'resposta_correta' deve conter APENAS a letra maiúscula: A, B, C ou D.
+- Distribua a posição da resposta correta de forma EQUILIBRADA entre A, B, C e D ao longo do CSV (não concentre em uma única letra).
 
-### PROIBIÇÕES DE LINGUAGEM (CRÍTICO)
-É PROIBIDO usar nas alternativas (A-D) e também na explicação qualquer termo de exclusão/absolutismo que entregue a resposta, incluindo:
-"apenas", "somente", "só", "unicamente", "exclusivamente", "exceto", "a única", "sempre", "nunca", "jamais",
-"obrigatoriamente", "necessariamente", "proibido", "vedado", "correta", "incorreta", "errada", "todas", "nenhuma".
-Também é PROIBIDO estruturar opções como "não é X", "não pode", "não ocorre", "não existe" (negações fortes).
-Prefira formulações afirmativas e plausíveis.
-
-### PARALELISMO E DENSIDADE TÉCNICA (OBRIGATÓRIO)
-As 4 alternativas devem ter:
-- Mesma estrutura gramatical (ex.: todas começam com verbo no infinitivo, ou todas são frases nominais).
-- Mesmo nível de detalhe e tom (técnico/coloquial).
-- Mesmo "tipo" de afirmação (todas descrevem causa, ou todas descrevem consequência, etc).
-- Comprimento e detalhamento semelhantes (±20% de caracteres).
-- Ao menos 1 termo técnico relevante do tema em CADA alternativa (não necessariamente o mesmo termo).
+### PARALELISMO E EQUILÍBRIO (CRÍTICO)
+- Todas as 4 opções devem ter comprimento textual similar (±20% de caracteres).
+- Todas as 4 opções devem ter a MESMA estrutura gramatical (todas afirmativas; mesmo “formato de frase”; mesmo tom).
+- Todas as 4 opções devem ter nível semelhante de detalhamento técnico (nenhuma opção “simplona” vs outra “super técnica”).
+- É PROIBIDO que a alternativa correta seja sistematicamente mais longa, mais detalhada ou mais “bem escrita” que as demais.
 
 ### CONSISTÊNCIA DE DOMÍNIO (OBRIGATÓRIO)
-Todas as 4 alternativas devem pertencer ao MESMO contexto conceitual e ao MESMO nível de abstração.
-Ex.: Se a pergunta é sobre árvores rubro-negra, TODAS as alternativas devem mencionar propriedades/regras típicas de árvores balanceadas (inserção/rotação/altura/cores/invariantes) — NÃO misture conceitos de outros domínios (hashing, heaps, grafos, etc.).
+- As 4 alternativas devem pertencer ao MESMO contexto conceitual e ao MESMO nível de abstração.
+- Não misture temas fora do tópico (ex.: se é sobre árvore rubro-negra, não coloque hashing/heap/grafos nas alternativas).
 
-### ANTI-PISTAS (CRÍTICO) — EVITAR "GABARITO POR ELIMINAÇÃO"
-Antes de finalizar cada questão, faça esta checagem:
-- Se UMA alternativa contiver um termo técnico específico que as outras não usam, reescreva as outras 3 para também conterem termos técnicos do MESMO DOMÍNIO (mesma "família" conceitual).
-- É PROIBIDO que a alternativa correta seja identificável por "única opção com palavra técnica", "única opção com número", "única opção com exemplo", "única opção com formalismo", etc.
+### ANTI-PISTAS (CRÍTICO) — EVITAR “GABARITO POR ELIMINAÇÃO”
+Antes de finalizar cada questão, faça uma checagem:
+- Se UMA alternativa contiver um termo técnico específico que as outras não usam, reescreva as outras 3 para também conter termos técnicos do MESMO DOMÍNIO (mesma “família” conceitual).
+- É PROIBIDO que apenas a resposta correta contenha termos sofisticados, números, formalismos, citações, exceções ou detalhes “únicos”.
+- É PROIBIDO que a correta seja a única alternativa com: palavra técnica-chave, sigla, valor numérico, símbolo, fórmula, ou exemplo.
+- É PROIBIDO que uma alternativa seja obviamente absurda/desconexa.
 
-### PADRÕES DE DISTRAÇÃO (use 3 dos 4 por questão)
-Crie alternativas erradas usando estes padrões (sem soar absurda):
-1) Termo correto + relação incorreta (mistura conceito certo com causa/efeito errados).
-2) Generalização plausível (afirma algo que ocorre em muitos casos, mas não no caso do enunciado).
-3) Confusão entre conceitos "vizinhos" (ex.: AVL vs Rubro-Negra; B-Tree vs BST; DFS vs BFS; método vs ferramenta; causa vs correlação; sintoma vs diagnóstico).
-4) Invariante quase correta (regra real com 1 detalhe sutil incorreto, ex.: condição >= vs >, "em geral" vs "sempre", ou propriedade verdadeira após rotação atribuída à inserção).
+### PROIBIÇÕES DE LINGUAGEM (CRÍTICO)
+É PROIBIDO usar nas alternativas (A-D) e também na explicação qualquer termo que entregue a resposta por exclusão/absolutismo, incluindo:
+"apenas", "somente", "só", "unicamente", "exclusivamente", "exceto", "a única", "sempre", "nunca", "jamais",
+"obrigatoriamente", "necessariamente", "proibido", "vedado", "correta", "incorreta", "errada", "todas", "nenhuma".
+Também é PROIBIDO estruturar alternativas com negação forte como principal pista (ex.: "não é...", "não pode...", "não ocorre...").
+Prefira formulações afirmativas e plausíveis.
 
-### ALTERNATIVA QUASE CORRETA (OBRIGATÓRIO)
-Em cada questão, inclua 1 alternativa "quase correta": ela deve estar correta em 80–90%, mas conter UM único detalhe sutil incompatível com a regra verdadeira (ex.: escopo incorreto, contexto trocado, relação causa-efeito invertida, condição ligeiramente errada, ou pressuposto correto aplicado à situação errada).`;
-  } else if (qType === "discursivas") {
+### DISTRAÇÕES PLAUSÍVEIS (DISTRATORES) — ERROS REAIS (OBRIGATÓRIO)
+Os distratores (alternativas erradas) devem representar ERROS CONCEITUAIS REAIS que um aluno cometeria.
+Eles devem confundir propositalmente sem parecer nonsense.
+
+Para cada questão:
+- A alternativa correta deve ser correta por um critério técnico específico.
+- As 3 alternativas incorretas devem:
+  (1) mencionar termos técnicos do MESMO tópico (mesma família conceitual),
+  (2) descrever uma regra real/próxima, mas aplicada ao gatilho/caso errado,
+  (3) errar por UM detalhe sutil (condição, causa/efeito, parte do algoritmo, precondição, consequência).
+
+### “COBERTURA DO MESMO SUBTEMA” (OBRIGATÓRIO)
+- Se a pergunta for sobre "rotação", TODAS as alternativas devem falar de balanceamento/rotações/cores/invariantes (no mesmo pacote).
+- Se a pergunta for sobre "coloração", TODAS devem falar de invariantes/cores/caminhos/altura negra/regras.
+- Se a pergunta for sobre "complexidade", TODAS devem ser complexidades plausíveis do mesmo tipo de operação (não misturar coisas sem relação).
+
+### PADRÕES OBRIGATÓRIOS PARA AS 3 INCORRETAS (use 1 por alternativa errada)
+Use estes padrões, mantendo o mesmo domínio conceitual:
+A) Regra correta do mesmo assunto, mas no momento/caso errado.
+B) Regra correta, mas com condição trocada/invertida (um detalhe muda tudo).
+C) Mistura com conceito vizinho (mesma área), mantendo vocabulário técnico similar.
+
+### “QUASE CORRETA” (OBRIGATÓRIO)
+Em cada questão, 1 alternativa errada deve ser “quase correta”: correta em 80–90%, mas com UM detalhe sutil inconsistente com a regra verdadeira.
+Isso deve exigir leitura cuidadosa e entendimento real.
+
+### EXPLICAÇÃO (para objetivas) — NEUTRA E NÃO-ENTREGADORA
+A coluna 'explicacao' deve ser neutra e conceitual:
+- Descreva o raciocínio e o critério que torna uma alternativa correta.
+- NÃO cite letras (A/B/C/D).
+- NÃO diga "a correta é..." e NÃO faça eliminação ("as outras estão erradas porque...").
+- NÃO use palavras de exclusão/absolutismo (lista acima).
+- Mantenha a explicação curta e técnica (2–5 linhas), focada no conceito.
+`;
+} else if (qType === "discursivas") {
     typeInstructions = `
 ## TIPO OBRIGATÓRIO: 100% DISCURSIVAS (tipo = "discursiva")
 É PROIBIDO gerar questões de múltipla escolha.
