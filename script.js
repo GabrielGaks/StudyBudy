@@ -168,202 +168,187 @@ function generateCSVPrompt() {
   const theme = promptTheme.value.trim();
   const content = promptContent.value.trim();
   const qType = promptQType ? promptQType.value : "objetivas";
-  const amountText = promptCsvAmount
+  const amount = promptCsvAmount
     ? parseInt(promptCsvAmount.value) || 10
     : 10;
- 
+
   if (!theme && !content) {
     alert("Preencha o tema ou o conteúdo desejado.");
     return;
   }
- 
-  // ── Bloco de instruções por tipo ──────────────────────────────────
-  let typeInstructions = "";
- 
-  
-if (qType === "objetivas") {
-  typeInstructions = `
-## TIPO OBRIGATÓRIO: 100% MÚLTIPLA ESCOLHA (tipo = "objetiva")
-É PROIBIDO gerar questões discursivas.
 
-### Regras estruturais (OBRIGATÓRIO)
-- Cada questão DEVE ter exatamente 4 opções (A, B, C, D) com UMA ÚNICA correta.
-- PROIBIDO usar: "Todas as anteriores", "Nenhuma das anteriores", "A e B estão corretas", ou variações.
-- A coluna 'resposta_correta' deve conter APENAS a letra maiúscula: A, B, C ou D.
-- Distribua a posição da resposta correta de forma EQUILIBRADA entre A, B, C e D ao longo do CSV (não concentre em uma única letra).
+  // ── Regras por tipo ───────────────────────────────────────────────
+  const proibicoes_linguagem = [
+    "apenas", "somente", "só", "unicamente", "exclusivamente", "exceto",
+    "a única", "sempre", "nunca", "jamais", "obrigatoriamente",
+    "necessariamente", "proibido", "vedado", "correta", "incorreta",
+    "errada", "todas", "nenhuma"
+  ];
 
-### PARALELISMO E EQUILÍBRIO (CRÍTICO)
-- Todas as 4 opções devem ter comprimento textual similar (±20% de caracteres).
-- Todas as 4 opções devem ter a MESMA estrutura gramatical (todas afirmativas; mesmo “formato de frase”; mesmo tom).
-- Todas as 4 opções devem ter nível semelhante de detalhamento técnico (nenhuma opção “simplona” vs outra “super técnica”).
-- É PROIBIDO que a alternativa correta seja sistematicamente mais longa, mais detalhada ou mais “bem escrita” que as demais.
+  const regras_objetivas = {
+    tipo_obrigatorio: "objetiva",
+    proibido_gerar: "questoes discursivas",
+    regras_estruturais: [
+      "Cada questão deve ter exatamente 4 opções (A, B, C, D) com uma única resposta correta.",
+      "Proibido usar: 'Todas as anteriores', 'Nenhuma das anteriores', 'A e B estão corretas' ou variações.",
+      "A coluna 'resposta_correta' deve conter apenas a letra maiúscula: A, B, C ou D.",
+      "Distribuir a posição da resposta correta de forma equilibrada entre A, B, C e D ao longo do CSV."
+    ],
+    paralelismo_e_equilibrio: [
+      "Todas as 4 opções devem ter comprimento textual similar (±20% de caracteres).",
+      "Todas as 4 opções devem ter a mesma estrutura gramatical (todas afirmativas, mesmo formato de frase, mesmo tom).",
+      "Todas as 4 opções devem ter nível semelhante de detalhamento técnico.",
+      "Proibido que a alternativa correta seja sistematicamente mais longa, detalhada ou bem escrita que as demais."
+    ],
+    consistencia_de_dominio: [
+      "As 4 alternativas devem pertencer ao mesmo contexto conceitual e ao mesmo nível de abstração.",
+      "Não misturar temas fora do tópico (ex.: se é sobre árvore rubro-negra, não incluir hashing/heap/grafos nas alternativas)."
+    ],
+    anti_pistas: [
+      "Se uma alternativa contiver um termo técnico ausente nas outras, reescrever as demais para incluírem termos do mesmo domínio.",
+      "Proibido que a correta seja a única com: palavra técnica-chave, sigla, valor numérico, símbolo, fórmula ou exemplo.",
+      "Proibido que uma alternativa seja obviamente absurda ou desconexa."
+    ],
+    proibicoes_linguagem: {
+      palavras_proibidas_nas_alternativas_e_explicacao: proibicoes_linguagem,
+      proibido_negacao_forte_como_pista_principal: true,
+      preferir_formulacoes_afirmativas_e_plausiveis: true
+    },
+    distratores: {
+      descricao: "Os distratores devem representar erros conceituais reais que um aluno cometeria.",
+      regras_para_as_3_incorretas: [
+        "Mencionar termos técnicos do mesmo tópico (mesma família conceitual).",
+        "Descrever uma regra real/próxima, mas aplicada ao gatilho/caso errado.",
+        "Errar por um detalhe sutil (condição, causa/efeito, parte do algoritmo, precondição, consequência)."
+      ],
+      padroes_obrigatorios: [
+        "A) Regra correta do mesmo assunto, mas no momento/caso errado.",
+        "B) Regra correta, mas com condição trocada/invertida (um detalhe muda tudo).",
+        "C) Mistura com conceito vizinho (mesma área), mantendo vocabulário técnico similar."
+      ],
+      quase_correta: "Em cada questão, 1 alternativa errada deve ser quase correta: correta em 80-90%, mas com um detalhe sutil inconsistente."
+    },
+    cobertura_mesmo_subtema: "Todas as alternativas devem pertencer ao mesmo subtema da pergunta (ex.: se a pergunta é sobre rotação, todas devem falar de balanceamento/rotações/cores/invariantes).",
+    explicacao: {
+      estilo: "neutra e conceitual",
+      regras: [
+        "Descrever o raciocínio e o critério que torna a resposta correta.",
+        "Não citar letras (A/B/C/D).",
+        "Não dizer 'a correta é...' nem fazer eliminação das outras.",
+        "Não usar palavras de exclusão/absolutismo.",
+        "Manter curta e técnica (2-5 linhas), focada no conceito."
+      ]
+    }
+  };
 
-### CONSISTÊNCIA DE DOMÍNIO (OBRIGATÓRIO)
-- As 4 alternativas devem pertencer ao MESMO contexto conceitual e ao MESMO nível de abstração.
-- Não misture temas fora do tópico (ex.: se é sobre árvore rubro-negra, não coloque hashing/heap/grafos nas alternativas).
+  const regras_discursivas = {
+    tipo_obrigatorio: "discursiva",
+    proibido_gerar: "questoes de multipla escolha",
+    regras_estruturais: [
+      "As colunas opcao_a, opcao_b, opcao_c, opcao_d e resposta_correta devem ficar vazias (sem nenhum caractere).",
+      "Formular perguntas que exijam argumentação, análise crítica ou síntese.",
+      "Usar verbos de comando precisos: 'Analise...', 'Compare e contraste...', 'Argumente...', 'Elabore...', 'Avalie criticamente...'."
+    ],
+    variedade_obrigatoria_de_formatos: [
+      "A) DEFINIÇÃO SEM PISTA: 'O que é ...?', 'Defina ...', 'Qual é o conceito de ...?' — o enunciado não deve conter a definição nem dar sinônimos óbvios.",
+      "B) IDENTIFICAÇÃO/NOMEAÇÃO: 'Qual é o nome do princípio/lei/método que descreve ...?' — pedir para explicar as características.",
+      "C) LISTAGEM + EXPLICAÇÃO: 'Cite 3 elementos/etapas/critérios de ... e explique cada um.'",
+      "D) APLICAÇÃO EM CENÁRIO: dar um mini-caso prático e pedir para identificar o conceito e explicar o raciocínio."
+    ],
+    anti_dica: [
+      "Se a pergunta é 'O que é X?', não descrever X no enunciado.",
+      "Evitar frases do tipo 'X é quando...' no próprio enunciado.",
+      "Evitar entregar palavras-chave que denunciem o termo pedido."
+    ],
+    explicacao: {
+      estilo: "checklist de correção",
+      deve_conter: ["definição", "1 exemplo", "1 contraexemplo ou limitação (quando aplicável)", "precisão de termos"],
+      proibido: "Fornecer a resposta completa pronta."
+    }
+  };
 
-### ANTI-PISTAS (CRÍTICO) — EVITAR “GABARITO POR ELIMINAÇÃO”
-Antes de finalizar cada questão, faça uma checagem:
-- Se UMA alternativa contiver um termo técnico específico que as outras não usam, reescreva as outras 3 para também conter termos técnicos do MESMO DOMÍNIO (mesma “família” conceitual).
-- É PROIBIDO que apenas a resposta correta contenha termos sofisticados, números, formalismos, citações, exceções ou detalhes “únicos”.
-- É PROIBIDO que a correta seja a única alternativa com: palavra técnica-chave, sigla, valor numérico, símbolo, fórmula, ou exemplo.
-- É PROIBIDO que uma alternativa seja obviamente absurda/desconexa.
+  const regras_mistas = {
+    tipo_obrigatorio: "mix (~50% objetiva, ~50% discursiva)",
+    instrucao: "Alternar entre os dois tipos ao longo do CSV.",
+    para_objetivas: {
+      tipo_coluna: "objetiva",
+      regras_resumidas: [
+        "4 opções plausíveis com distratores baseados em erros conceituais reais.",
+        "Comprimento similar entre as opções (±20%). Distribuir a resposta correta entre A-D.",
+        "Proibido: 'Todas/Nenhuma das anteriores' ou combinações.",
+        "'resposta_correta' = apenas a letra (A, B, C ou D).",
+        "Palavras proibidas nas alternativas: " + proibicoes_linguagem.join(", ") + ". Evitar negações fortes.",
+        "Consistência de domínio: todas as 4 alternativas no mesmo contexto conceitual e nível de abstração.",
+        "Paralelismo e densidade técnica: mesma estrutura gramatical, mesmo nível de detalhe, ao menos 1 termo técnico em cada alternativa.",
+        "Anti-pistas: proibido que a correta seja a única com palavra técnica, número, exemplo ou formalismo.",
+        "Incluir 1 alternativa quase correta (correta em 80-90%, mas com 1 detalhe sutil incompatível)."
+      ]
+    },
+    para_discursivas: {
+      tipo_coluna: "discursiva",
+      regras_resumidas: [
+        "Colunas opcao_a até resposta_correta devem ficar vazias.",
+        "Distribuir entre os formatos: A) Definição sem pista, B) Identificação/Nomeação, C) Listagem + Explicação, D) Aplicação em Cenário.",
+        "Anti-dica: não descrever o conceito pedido no próprio enunciado.",
+        "'explicacao' = checklist de correção com definição, 1 exemplo, 1 contraexemplo/limitação (quando aplicável) e precisão de termos."
+      ]
+    }
+  };
 
-### PROIBIÇÕES DE LINGUAGEM (CRÍTICO)
-É PROIBIDO usar nas alternativas (A-D) e também na explicação qualquer termo que entregue a resposta por exclusão/absolutismo, incluindo:
-"apenas", "somente", "só", "unicamente", "exclusivamente", "exceto", "a única", "sempre", "nunca", "jamais",
-"obrigatoriamente", "necessariamente", "proibido", "vedado", "correta", "incorreta", "errada", "todas", "nenhuma".
-Também é PROIBIDO estruturar alternativas com negação forte como principal pista (ex.: "não é...", "não pode...", "não ocorre...").
-Prefira formulações afirmativas e plausíveis.
+  const regras_por_tipo = qType === "objetivas"
+    ? regras_objetivas
+    : qType === "discursivas"
+      ? regras_discursivas
+      : regras_mistas;
 
-### DISTRAÇÕES PLAUSÍVEIS (DISTRATORES) — ERROS REAIS (OBRIGATÓRIO)
-Os distratores (alternativas erradas) devem representar ERROS CONCEITUAIS REAIS que um aluno cometeria.
-Eles devem confundir propositalmente sem parecer nonsense.
+  // ── Objeto JSON do prompt ─────────────────────────────────────────
+  const promptObj = {
+    persona: "elaborador sênior de avaliações acadêmicas com expertise em design instrucional e psicometria",
+    aviso_sistema: "O output será processado por um parser CSV automatizado. Qualquer desvio de formato causa erro no sistema.",
+    tarefa: "gerar_csv_quiz",
+    contexto: {
+      tema_central: theme || "Conhecimentos Gerais",
+      conteudo_especifico: content || "Abordagem ampla do tema",
+      quantidade_questoes: amount,
+      tipo_questoes: qType
+    },
+    regras_por_tipo,
+    qualidade_pedagogica: {
+      taxonomia_bloom_revisada: {
+        lembrar_compreender: "~20% — definições e conceitos-base",
+        aplicar_analisar: "~40% — resolução de problemas, estudos de caso e cenários práticos",
+        avaliar_criar: "~40% — julgamento crítico, proposição de soluções, comparação entre abordagens"
+      },
+      diretrizes_de_formulacao: [
+        "Preferir enunciados contextualizados com cenários, situações-problema ou estudos de caso breves.",
+        "O enunciado deve ser autossuficiente — o aluno não deve precisar de material externo para responder.",
+        "Usar linguagem formal, clara e sem ambiguidades. Evitar duplas negativas.",
+        "A coluna 'nivel' deve conter exatamente um destes valores em minúsculas: 'facil', 'medio' ou 'dificil'. Distribuir de forma balanceada."
+      ]
+    },
+    antipadroes_proibidos: [
+      "Perguntas genéricas tipo 'Qual a importância de X?' sem contexto aplicado.",
+      "Alternativas que se eliminam por lógica (ex: duas opções mutuamente exclusivas que cobrem todos os casos).",
+      "Enunciados com pistas gramaticais que denunciam a resposta (concordância de gênero/número).",
+      "Repetição de palavras do enunciado apenas na alternativa correta.",
+      "Questões com pegadinhas baseadas em detalhes irrelevantes."
+    ],
+    formato_saida: {
+      instrucao: "Retornar EXCLUSIVAMENTE um bloco CSV puro, sem crases, sem markdown, sem saudações e sem nenhum texto antes ou depois.",
+      separador: ",",
+      campos_com_virgula_ou_quebra_de_linha: "envolver em aspas duplas",
+      cabecalho_obrigatorio: "pergunta,opcao_a,opcao_b,opcao_c,opcao_d,resposta_correta,explicacao,tema,nivel,tipo",
+      quantidade_linhas_de_dados: amount,
+      valores_validos_coluna_tipo: ["objetiva", "discursiva"]
+    }
+  };
 
-Para cada questão:
-- A alternativa correta deve ser correta por um critério técnico específico.
-- As 3 alternativas incorretas devem:
-  (1) mencionar termos técnicos do MESMO tópico (mesma família conceitual),
-  (2) descrever uma regra real/próxima, mas aplicada ao gatilho/caso errado,
-  (3) errar por UM detalhe sutil (condição, causa/efeito, parte do algoritmo, precondição, consequência).
-
-### “COBERTURA DO MESMO SUBTEMA” (OBRIGATÓRIO)
-- Se a pergunta for sobre "rotação", TODAS as alternativas devem falar de balanceamento/rotações/cores/invariantes (no mesmo pacote).
-- Se a pergunta for sobre "coloração", TODAS devem falar de invariantes/cores/caminhos/altura negra/regras.
-- Se a pergunta for sobre "complexidade", TODAS devem ser complexidades plausíveis do mesmo tipo de operação (não misturar coisas sem relação).
-
-### PADRÕES OBRIGATÓRIOS PARA AS 3 INCORRETAS (use 1 por alternativa errada)
-Use estes padrões, mantendo o mesmo domínio conceitual:
-A) Regra correta do mesmo assunto, mas no momento/caso errado.
-B) Regra correta, mas com condição trocada/invertida (um detalhe muda tudo).
-C) Mistura com conceito vizinho (mesma área), mantendo vocabulário técnico similar.
-
-### “QUASE CORRETA” (OBRIGATÓRIO)
-Em cada questão, 1 alternativa errada deve ser “quase correta”: correta em 80–90%, mas com UM detalhe sutil inconsistente com a regra verdadeira.
-Isso deve exigir leitura cuidadosa e entendimento real.
-
-### EXPLICAÇÃO (para objetivas) — NEUTRA E NÃO-ENTREGADORA
-A coluna 'explicacao' deve ser neutra e conceitual:
-- Descreva o raciocínio e o critério que torna uma alternativa correta.
-- NÃO cite letras (A/B/C/D).
-- NÃO diga "a correta é..." e NÃO faça eliminação ("as outras estão erradas porque...").
-- NÃO use palavras de exclusão/absolutismo (lista acima).
-- Mantenha a explicação curta e técnica (2–5 linhas), focada no conceito.
-`;
-} else if (qType === "discursivas") {
-    typeInstructions = `
-## TIPO OBRIGATÓRIO: 100% DISCURSIVAS (tipo = "discursiva")
-É PROIBIDO gerar questões de múltipla escolha.
- 
-### Regras para discursivas:
-- As colunas opcao_a, opcao_b, opcao_c, opcao_d e resposta_correta DEVEM FICAR VAZIAS (sem nenhum caractere).
-- Formule perguntas que exijam ARGUMENTAÇÃO, ANÁLISE CRÍTICA ou SÍNTESE — não perguntas que se respondem com uma única frase.
-- Use verbos de comando precisos: "Analise...", "Compare e contraste...", "Argumente a favor ou contra...", "Elabore uma proposta para...", "Avalie criticamente...".
-
-### VARIEDADE OBRIGATÓRIA DE FORMATOS (discursivas)
-Não faça todas as questões no formato "Explique o que foi dito no enunciado".
-Distribua as perguntas discursivas entre estes formatos (balanceado):
-
-A) DEFINIÇÃO SEM PISTA (recuperação)
-- Pergunte diretamente "O que é ...?", "Defina ...", "Qual é o conceito de ...?"
-- O enunciado NÃO deve conter a definição nem dar sinônimos óbvios do termo.
-- Depois peça: "cite um exemplo e justifique".
-
-B) IDENTIFICAÇÃO / NOMEAÇÃO
-- "Qual é o nome do princípio/lei/efeito/método que descreve ...?"
-- "Como se chama a técnica usada quando ...?"
-- Depois peça para explicar as características.
-
-C) LISTAGEM + EXPLICAÇÃO
-- "Cite 3 elementos/etapas/critérios de ... e explique cada um."
-- "Liste vantagens e limitações e justifique."
-
-D) APLICAÇÃO EM CENÁRIO (sem entregar o conceito)
-- Dê um mini-caso prático e peça para:
-  1) identificar o conceito envolvido (nomear) e
-  2) explicar o raciocínio e implicações.
-
-REGRAS ANTI-DICA (CRÍTICO):
-- Se a pergunta é "O que é X?", NÃO descreva X no enunciado.
-- Evite frases do tipo "X é quando..." no próprio enunciado.
-- Evite entregar palavras-chave que denunciem o termo pedido.
-
-- A coluna 'explicacao' deve conter um checklist de correção (tópicos que precisam aparecer), incluindo: definição, 1 exemplo, 1 contraexemplo/limitação (quando aplicável) e precisão de termos. Não forneça a resposta completa pronta.`;
-  } else {
-    typeInstructions = `
-## TIPO OBRIGATÓRIO: MIX BALANCEADO (~50% objetivas, ~50% discursivas)
-Alterne entre os dois tipos ao longo do CSV.
- 
-### Para objetivas (tipo = "objetiva"):
-- 4 opções plausíveis com distratores baseados em erros conceituais reais.
-- Todas as opções com comprimento similar (±20% de caracteres). Distribua a resposta correta entre A-D.
-- PROIBIDO: "Todas/Nenhuma das anteriores" ou combinações.
-- 'resposta_correta' = apenas a letra (A, B, C ou D).
-- PROIBIÇÕES DE LINGUAGEM: não use "apenas", "somente", "só", "unicamente", "exclusivamente", "exceto", "a única", "sempre", "nunca", "jamais", "obrigatoriamente", "necessariamente", "proibido", "vedado", "correta", "incorreta", "errada", "todas", "nenhuma" nas alternativas. Evite negações fortes ("não é X", "não pode", "não ocorre").
-- CONSISTÊNCIA DE DOMÍNIO: todas as 4 alternativas devem pertencer ao MESMO contexto conceitual e nível de abstração — NÃO misture domínios diferentes entre as opções.
-- PARALELISMO E DENSIDADE TÉCNICA: mesma estrutura gramatical, mesmo nível de detalhe, mesmo tipo de afirmação, e ao menos 1 termo técnico relevante em CADA alternativa.
-- ANTI-PISTAS: se UMA alternativa tiver termo técnico específico ausente nas outras, reescreva as demais para incluírem termos técnicos do mesmo domínio. PROIBIDO que a correta seja a "única com palavra técnica", "única com número", "única com exemplo" ou "única com formalismo".
-- PADRÕES DE DISTRAÇÃO (use 3 dos 4): 1) termo correto + relação incorreta; 2) generalização plausível; 3) confusão entre conceitos vizinhos (ex.: AVL vs Rubro-Negra, DFS vs BFS); 4) invariante quase correta (1 detalhe sutil errado).
-- Inclua 1 alternativa "quase correta" (correta em 80–90%, mas com UM único detalhe sutil incompatível: escopo, contexto, relação causa-efeito ou condição ligeiramente errada).
- 
-### Para discursivas (tipo = "discursiva"):
-- Colunas opcao_a até resposta_correta DEVEM FICAR VAZIAS.
-- Distribua entre os formatos: A) Definição sem pista, B) Identificação/Nomeação, C) Listagem + Explicação, D) Aplicação em Cenário — NÃO repita sempre "Explique o que foi dito no enunciado".
-- REGRAS ANTI-DICA: se a pergunta é "O que é X?", NÃO descreva X no enunciado; evite entregar palavras-chave que denunciem o termo pedido.
-- 'explicacao' = checklist de correção (definição, 1 exemplo, 1 contraexemplo/limitação quando aplicável, precisão de termos) — não forneça a resposta completa pronta.`;
-  }
- 
-  // ── Prompt principal ─────────────────────────────────────────────
-  const promptStr = `Você é um elaborador sênior de avaliações acadêmicas com expertise em design instrucional e psicometria. Seu output será processado por um parser CSV automatizado — qualquer desvio de formato causa erro no sistema.
- 
-## CONTEXTO DA AVALIAÇÃO
-- **Tema central:** ${theme || "Conhecimentos Gerais"}
-- **Conteúdo específico:** ${content || "Abordagem ampla do tema"}
-- **Quantidade exata:** ${amountText} questões
- 
-${typeInstructions}
- 
-## QUALIDADE PEDAGÓGICA (CRÍTICO)
-Aplique a Taxonomia de Bloom revisada para distribuir as questões entre TODOS estes níveis cognitivos:
-- ~20% LEMBRAR/COMPREENDER (definições, conceitos-base)
-- ~40% APLICAR/ANALISAR (resolução de problemas, estudo de caso, cenários práticos)
-- ~40% AVALIAR/CRIAR (julgamento crítico, proposição de soluções, comparação entre abordagens)
- 
-### Diretrizes de formulação:
-1. PREFIRA enunciados contextualizados com cenários, situações-problema ou estudos de caso breves em vez de perguntas diretas tipo "O que é X?".
-2. O enunciado deve ser AUTOSSUFICIENTE — o aluno não deve precisar de material externo para responder.
-3. Use linguagem formal, clara e sem ambiguidades. Evite duplas negativas.
-4. A coluna 'explicacao' para questões objetivas deve ser NEUTRA E CONCEITUAL:
-   - Descreva o raciocínio correto e o conceito-chave envolvido.
-   - NÃO cite letras (A/B/C/D).
-   - NÃO diga "a correta é..." nem explique por que as outras estão erradas.
-   - NÃO use palavras de exclusão/absolutismo (lista acima).
-   Para discursivas, liste os critérios de correção esperados.
-5. A coluna 'nivel' deve conter exatamente um destes valores em minúsculas: "facil", "medio" ou "dificil". Distribua de forma balanceada.
- 
-## ANTIPADRÕES PROIBIDOS
-- Perguntas genéricas tipo "Qual a importância de X?" sem contexto aplicado.
-- Alternativas que se eliminam por lógica (ex: duas opções mutuamente exclusivas que cobrem todos os casos).
-- Enunciados com pistas gramaticais que denunciam a resposta (concordância de gênero/número).
-- Repetição de palavras do enunciado apenas na alternativa correta.
-- Questões com pegadinhas baseadas em detalhes irrelevantes.
- 
-## FORMATO DE SAÍDA
-Retorne EXCLUSIVAMENTE um bloco CSV puro (sem crases, sem markdown, sem saudações, sem texto antes ou depois). Use vírgula (,) como separador. Se algum campo contiver vírgula ou quebra de linha, envolva-o em aspas duplas (").
- 
-Linha de cabeçalho OBRIGATÓRIA (copie exatamente):
-pergunta,opcao_a,opcao_b,opcao_c,opcao_d,resposta_correta,explicacao,tema,nivel,tipo
- 
-Gere exatamente ${amountText} linhas de dados após o cabeçalho. Coluna 'tipo' = "objetiva" ou "discursiva" (minúsculas).`;
- 
-  promptResult.value = promptStr;
+  promptResult.value = JSON.stringify(promptObj, null, 2);
   promptResultContainer.classList.remove("hidden");
   btnGoCsvImport.classList.remove("hidden");
   pasteCsvBox.classList.add("hidden");
   btnShowPasteCsv.textContent = "Colar CSV";
 }
-
-
 function copyCSVPrompt() {
     const textToCopy = promptResult.value;
     if (navigator.clipboard && window.isSecureContext) {
@@ -953,16 +938,35 @@ function calculateResults() {
 }
 
 function generateEvaluationPrompt() {
-    let promptBase = "Aja como um professor rigoroso. Avalie as seguintes respostas discursivas do aluno e atribua uma nota/crítica detalhada para cada uma:\\n\\n";
+    const questoes = [];
     state.activeQuestions.forEach((q, i) => {
         if (q.tipo === 'discursiva') {
-            const uAns = state.userAnswers[i] || "Não respondeu";
-            promptBase += `PERGUNTA ${i+1}: ${q.pergunta}\\nRESPOSTA DO ALUNO: ${uAns}\\n\\n---\\n\\n`;
+            questoes.push({
+                numero: i + 1,
+                pergunta: q.pergunta,
+                criterios_de_correcao: q.explicacao || null,
+                resposta_do_aluno: state.userAnswers[i] || "Não respondeu"
+            });
         }
     });
 
+    const promptObj = {
+        persona: "professor rigoroso e avaliador pedagógico especialista na disciplina",
+        tarefa: "avaliar_respostas_discursivas",
+        instrucoes: [
+            "Para cada questão, avaliar a resposta do aluno com base nos critérios de correção fornecidos.",
+            "Atribuir uma nota de 0 a 10 com justificativa detalhada.",
+            "Apontar os pontos fortes, as lacunas conceituais e sugerir como melhorar a resposta.",
+            "Usar linguagem direta, construtiva e pedagogicamente fundamentada."
+        ],
+        formato_de_saida: "Para cada questão: número, nota (0-10), avaliação detalhada e sugestão de melhoria.",
+        questoes
+    };
+
+    const promptStr = JSON.stringify(promptObj, null, 2);
+
     if (navigator.clipboard && window.isSecureContext) {
-        navigator.clipboard.writeText(promptBase).then(() => {
+        navigator.clipboard.writeText(promptStr).then(() => {
             const origin = btnEvalDiscursive.innerHTML;
             btnEvalDiscursive.innerHTML = "✅ Copiado!";
             setTimeout(() => { btnEvalDiscursive.innerHTML = origin; }, 2000);
@@ -971,7 +975,6 @@ function generateEvaluationPrompt() {
         alert("Não foi possível copiar. Seu navegador não suporta clipboard automático sem contexto seguro.");
     }
 }
-
 function redoQuiz() {
     // Limpa respostas e volta pro config
     state.userAnswers = [];
