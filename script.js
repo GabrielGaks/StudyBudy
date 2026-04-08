@@ -201,21 +201,32 @@ function generateCSVPrompt() {
 Também é PROIBIDO estruturar opções como "não é X", "não pode", "não ocorre", "não existe" (negações fortes).
 Prefira formulações afirmativas e plausíveis.
 
-### PARALELISMO (OBRIGATÓRIO)
+### PARALELISMO E DENSIDADE TÉCNICA (OBRIGATÓRIO)
 As 4 alternativas devem ter:
 - Mesma estrutura gramatical (ex.: todas começam com verbo no infinitivo, ou todas são frases nominais).
 - Mesmo nível de detalhe e tom (técnico/coloquial).
 - Mesmo "tipo" de afirmação (todas descrevem causa, ou todas descrevem consequência, etc).
+- Comprimento e detalhamento semelhantes (±20% de caracteres).
+- Ao menos 1 termo técnico relevante do tema em CADA alternativa (não necessariamente o mesmo termo).
+
+### CONSISTÊNCIA DE DOMÍNIO (OBRIGATÓRIO)
+Todas as 4 alternativas devem pertencer ao MESMO contexto conceitual e ao MESMO nível de abstração.
+Ex.: Se a pergunta é sobre árvores rubro-negra, TODAS as alternativas devem mencionar propriedades/regras típicas de árvores balanceadas (inserção/rotação/altura/cores/invariantes) — NÃO misture conceitos de outros domínios (hashing, heaps, grafos, etc.).
+
+### ANTI-PISTAS (CRÍTICO) — EVITAR "GABARITO POR ELIMINAÇÃO"
+Antes de finalizar cada questão, faça esta checagem:
+- Se UMA alternativa contiver um termo técnico específico que as outras não usam, reescreva as outras 3 para também conterem termos técnicos do MESMO DOMÍNIO (mesma "família" conceitual).
+- É PROIBIDO que a alternativa correta seja identificável por "única opção com palavra técnica", "única opção com número", "única opção com exemplo", "única opção com formalismo", etc.
 
 ### PADRÕES DE DISTRAÇÃO (use 3 dos 4 por questão)
 Crie alternativas erradas usando estes padrões (sem soar absurda):
 1) Termo correto + relação incorreta (mistura conceito certo com causa/efeito errados).
 2) Generalização plausível (afirma algo que ocorre em muitos casos, mas não no caso do enunciado).
-3) Confusão entre conceitos "vizinhos" (ex.: método vs ferramenta, causa vs correlação, sintoma vs diagnóstico).
-4) Detalhe técnico deslocado (traz um detalhe real do tema, mas aplicado ao contexto errado do enunciado).
+3) Confusão entre conceitos "vizinhos" (ex.: AVL vs Rubro-Negra; B-Tree vs BST; DFS vs BFS; método vs ferramenta; causa vs correlação; sintoma vs diagnóstico).
+4) Invariante quase correta (regra real com 1 detalhe sutil incorreto, ex.: condição >= vs >, "em geral" vs "sempre", ou propriedade verdadeira após rotação atribuída à inserção).
 
 ### ALTERNATIVA QUASE CORRETA (OBRIGATÓRIO)
-Em cada questão, inclua 1 alternativa "quase correta": ela deve apresentar raciocínio correto ou premissa válida, mas conter UM detalhe sutil inconsistente com o enunciado (ex.: escopo incorreto, contexto trocado, relação causa-efeito invertida, ou pressuposto correto aplicado à situação errada).`;
+Em cada questão, inclua 1 alternativa "quase correta": ela deve estar correta em 80–90%, mas conter UM único detalhe sutil incompatível com a regra verdadeira (ex.: escopo incorreto, contexto trocado, relação causa-efeito invertida, condição ligeiramente errada, ou pressuposto correto aplicado à situação errada).`;
   } else if (qType === "discursivas") {
     typeInstructions = `
 ## TIPO OBRIGATÓRIO: 100% DISCURSIVAS (tipo = "discursiva")
@@ -262,13 +273,15 @@ Alterne entre os dois tipos ao longo do CSV.
  
 ### Para objetivas (tipo = "objetiva"):
 - 4 opções plausíveis com distratores baseados em erros conceituais reais.
-- Todas as opções com comprimento similar. Distribua a resposta correta entre A-D.
+- Todas as opções com comprimento similar (±20% de caracteres). Distribua a resposta correta entre A-D.
 - PROIBIDO: "Todas/Nenhuma das anteriores" ou combinações.
 - 'resposta_correta' = apenas a letra (A, B, C ou D).
 - PROIBIÇÕES DE LINGUAGEM: não use "apenas", "somente", "só", "unicamente", "exclusivamente", "exceto", "a única", "sempre", "nunca", "jamais", "obrigatoriamente", "necessariamente", "proibido", "vedado", "correta", "incorreta", "errada", "todas", "nenhuma" nas alternativas. Evite negações fortes ("não é X", "não pode", "não ocorre").
-- PARALELISMO: mesma estrutura gramatical, mesmo nível de detalhe e mesmo tipo de afirmação em todas as 4 opções.
-- PADRÕES DE DISTRAÇÃO (use 3 dos 4): 1) termo correto + relação incorreta; 2) generalização plausível; 3) confusão entre conceitos vizinhos; 4) detalhe técnico deslocado.
-- Inclua 1 alternativa "quase correta" (raciocínio ou premissa válida, mas com UM detalhe sutil inconsistente: escopo, contexto ou relação causa-efeito errado).
+- CONSISTÊNCIA DE DOMÍNIO: todas as 4 alternativas devem pertencer ao MESMO contexto conceitual e nível de abstração — NÃO misture domínios diferentes entre as opções.
+- PARALELISMO E DENSIDADE TÉCNICA: mesma estrutura gramatical, mesmo nível de detalhe, mesmo tipo de afirmação, e ao menos 1 termo técnico relevante em CADA alternativa.
+- ANTI-PISTAS: se UMA alternativa tiver termo técnico específico ausente nas outras, reescreva as demais para incluírem termos técnicos do mesmo domínio. PROIBIDO que a correta seja a "única com palavra técnica", "única com número", "única com exemplo" ou "única com formalismo".
+- PADRÕES DE DISTRAÇÃO (use 3 dos 4): 1) termo correto + relação incorreta; 2) generalização plausível; 3) confusão entre conceitos vizinhos (ex.: AVL vs Rubro-Negra, DFS vs BFS); 4) invariante quase correta (1 detalhe sutil errado).
+- Inclua 1 alternativa "quase correta" (correta em 80–90%, mas com UM único detalhe sutil incompatível: escopo, contexto, relação causa-efeito ou condição ligeiramente errada).
  
 ### Para discursivas (tipo = "discursiva"):
 - Colunas opcao_a até resposta_correta DEVEM FICAR VAZIAS.
