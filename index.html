@@ -20,55 +20,12 @@
             <h2>Bem-vindo! Escolha a fonte das perguntas</h2>
 
             <div class="cards-container">
-                <div class="card" id="card-csv" style="justify-content: flex-start;">
+                <div class="card" id="card-csv">
                     <div class="card-icon">📁</div>
-                    <h3>Upload de CSV</h3>
-                    <p>Gere o prompt, envie para a IA e depois importe o CSV retornado por upload ou colando o conteúdo.</p>
-
-                    <input type="file" id="csv-input" accept=".csv" class="hidden">
-                    <button class="btn btn-primary full-width" id="btn-toggle-prompt">Gerar Prompt p/ IA Externo</button>
-                    <div id="csv-error" class="error-text hidden"></div>
-
-                    <div id="prompt-generator-container" class="hidden prompt-box">
-                        <h4>Gerador de Prompt para CSV</h4>
-
-                        <div class="form-group row-group" style="margin-bottom: 12px; display: flex; gap: 10px;">
-                            <input type="text" id="prompt-theme" placeholder="Tema Geral (ex: Biologia)" style="flex: 2;">
-                            <input type="number" id="prompt-csv-amount" title="Qtd. de Perguntas" value="10" min="1" max="50" style="flex: 1;">
-                        </div>
-
-                        <div class="form-group" style="margin-bottom: 12px;">
-                            <select id="prompt-q-type" class="full-width" style="padding: 10px; border-radius: 8px; border: 1px solid var(--border);">
-                                <option value="objetivas">Apenas Objetivas</option>
-                                <option value="discursivas">Apenas Discursivas</option>
-                                <option value="mistas">Mistas (Objetivas e Discursivas)</option>
-                            </select>
-                        </div>
-
-                        <div class="form-group" style="margin-bottom: 15px;">
-                            <textarea id="prompt-content" placeholder="Especifique o Conteúdo (ex: Mitose e meiose)" rows="2"></textarea>
-                        </div>
-
-                        <button class="btn btn-primary full-width" id="btn-generate-prompt">Montar Prompt</button>
-
-                        <div id="prompt-result-container" class="hidden mt-4">
-                            <textarea id="prompt-result" rows="4" readonly class="readonly-textarea"></textarea>
-                            <button class="btn btn-outline full-width mt-2" id="btn-copy-prompt">📋 Copiar para Prancheta</button>
-
-                            <div id="csv-import-actions" class="hidden mt-2">
-                                <div class="csv-divider">Importar CSV</div>
-                                <div class="import-action-buttons">
-                                    <button class="btn btn-primary full-width" id="btn-upload-csv">Fazer Upload do CSV</button>
-                                    <button class="btn btn-outline full-width" id="btn-show-paste-csv">Colar CSV</button>
-                                </div>
-
-                                <div id="paste-csv-box" class="paste-csv-box full-width hidden">
-                                    <textarea id="csv-text-input" rows="7" placeholder="Cole aqui o CSV gerado pela IA, incluindo o cabeçalho."></textarea>
-                                    <button class="btn btn-outline mt-2 full-width" id="btn-import-csv-text">Usar CSV Colado</button>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
+                    <h3>Importar via CSV (passo a passo)</h3>
+                    <p>Gere um prompt para IA, obtenha o CSV e depois importe-o em dois passos simples.</p>
+                    <button class="btn btn-primary full-width" id="btn-start-csv">Começar</button>
+                    <button class="btn btn-link mt-2" id="btn-skip-to-import">Já tenho um CSV →</button>
                 </div>
 
                 <div class="card" id="card-ai">
@@ -78,6 +35,64 @@
                     <button class="btn btn-primary" id="btn-goto-ai">Inserir Texto</button>
                 </div>
             </div>
+        </section>
+
+        <section id="screen-csv-prompt" class="screen hidden">
+            <button class="btn-icon btn-back" data-target="home">← Voltar</button>
+            <h2>Passo 1 — Gerar Prompt para IA Externa</h2>
+            <p style="color: var(--text-sec); margin-bottom: 20px;">Preencha os campos abaixo para montar um prompt que você usará em uma IA externa (ex: ChatGPT). Depois, volte aqui para importar o CSV gerado.</p>
+
+            <div class="form-group row-group">
+                <input type="text" id="prompt-theme" placeholder="Tema Geral (ex: Biologia)" style="flex: 2;">
+                <input type="number" id="prompt-csv-amount" title="Qtd. de Perguntas" value="10" min="1" max="50" style="flex: 1;">
+            </div>
+
+            <div class="form-group">
+                <select id="prompt-q-type" class="full-width">
+                    <option value="objetivas">Apenas Objetivas</option>
+                    <option value="discursivas">Apenas Discursivas</option>
+                    <option value="mistas">Mistas (Objetivas e Discursivas)</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <textarea id="prompt-content" placeholder="Especifique o Conteúdo (ex: Mitose e meiose)" rows="3"></textarea>
+            </div>
+
+            <button class="btn btn-primary full-width" id="btn-generate-prompt">Montar Prompt</button>
+
+            <div id="prompt-result-container" class="hidden mt-4">
+                <textarea id="prompt-result" rows="6" readonly class="readonly-textarea"></textarea>
+                <button class="btn btn-outline full-width mt-2" id="btn-copy-prompt">📋 Copiar para Prancheta</button>
+                <button class="btn btn-primary full-width mt-2 hidden" id="btn-go-csv-import">Continuar para importar CSV →</button>
+            </div>
+        </section>
+
+        <section id="screen-csv-import" class="screen hidden">
+            <button class="btn-icon btn-back" data-target="csv-prompt">← Voltar</button>
+            <h2>Passo 2 — Importar CSV Pronto</h2>
+
+            <div class="csv-requirements">
+                <p><strong>Requisitos mínimos do CSV:</strong></p>
+                <ul>
+                    <li>Deve ter um cabeçalho com ao menos a coluna <code>pergunta</code>.</li>
+                    <li>Para questões objetivas: colunas <code>opcao_a</code> até <code>opcao_d</code> e <code>resposta_correta</code> com valor A, B, C ou D.</li>
+                    <li>Para discursivas: coluna <code>tipo=discursiva</code> — as opções podem ficar vazias.</li>
+                </ul>
+            </div>
+
+            <input type="file" id="csv-input" accept=".csv" class="hidden">
+            <div class="import-action-buttons mt-4">
+                <button class="btn btn-primary full-width" id="btn-upload-csv">📂 Importar arquivo CSV</button>
+                <button class="btn btn-outline full-width" id="btn-show-paste-csv">📋 Colar CSV</button>
+            </div>
+
+            <div id="paste-csv-box" class="paste-csv-box full-width hidden mt-2">
+                <textarea id="csv-text-input" rows="8" placeholder="Cole aqui o CSV gerado pela IA, incluindo o cabeçalho."></textarea>
+                <button class="btn btn-outline mt-2 full-width" id="btn-import-csv-text">Usar CSV Colado</button>
+            </div>
+
+            <div id="csv-error" class="error-text hidden"></div>
         </section>
 
         <section id="screen-ai" class="screen hidden">
