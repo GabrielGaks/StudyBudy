@@ -225,7 +225,36 @@ Em cada questão, inclua 1 alternativa "quase correta": ela deve apresentar raci
 - As colunas opcao_a, opcao_b, opcao_c, opcao_d e resposta_correta DEVEM FICAR VAZIAS (sem nenhum caractere).
 - Formule perguntas que exijam ARGUMENTAÇÃO, ANÁLISE CRÍTICA ou SÍNTESE — não perguntas que se respondem com uma única frase.
 - Use verbos de comando precisos: "Analise...", "Compare e contraste...", "Argumente a favor ou contra...", "Elabore uma proposta para...", "Avalie criticamente...".
-- A coluna 'explicacao' deve conter os CRITÉRIOS DE CORREÇÃO esperados (tópicos-chave que a resposta precisa abordar), não uma resposta pronta.`;
+
+### VARIEDADE OBRIGATÓRIA DE FORMATOS (discursivas)
+Não faça todas as questões no formato "Explique o que foi dito no enunciado".
+Distribua as perguntas discursivas entre estes formatos (balanceado):
+
+A) DEFINIÇÃO SEM PISTA (recuperação)
+- Pergunte diretamente "O que é ...?", "Defina ...", "Qual é o conceito de ...?"
+- O enunciado NÃO deve conter a definição nem dar sinônimos óbvios do termo.
+- Depois peça: "cite um exemplo e justifique".
+
+B) IDENTIFICAÇÃO / NOMEAÇÃO
+- "Qual é o nome do princípio/lei/efeito/método que descreve ...?"
+- "Como se chama a técnica usada quando ...?"
+- Depois peça para explicar as características.
+
+C) LISTAGEM + EXPLICAÇÃO
+- "Cite 3 elementos/etapas/critérios de ... e explique cada um."
+- "Liste vantagens e limitações e justifique."
+
+D) APLICAÇÃO EM CENÁRIO (sem entregar o conceito)
+- Dê um mini-caso prático e peça para:
+  1) identificar o conceito envolvido (nomear) e
+  2) explicar o raciocínio e implicações.
+
+REGRAS ANTI-DICA (CRÍTICO):
+- Se a pergunta é "O que é X?", NÃO descreva X no enunciado.
+- Evite frases do tipo "X é quando..." no próprio enunciado.
+- Evite entregar palavras-chave que denunciem o termo pedido.
+
+- A coluna 'explicacao' deve conter um checklist de correção (tópicos que precisam aparecer), incluindo: definição, 1 exemplo, 1 contraexemplo/limitação (quando aplicável) e precisão de termos. Não forneça a resposta completa pronta.`;
   } else {
     typeInstructions = `
 ## TIPO OBRIGATÓRIO: MIX BALANCEADO (~50% objetivas, ~50% discursivas)
@@ -243,8 +272,9 @@ Alterne entre os dois tipos ao longo do CSV.
  
 ### Para discursivas (tipo = "discursiva"):
 - Colunas opcao_a até resposta_correta DEVEM FICAR VAZIAS.
-- Use verbos de comando de alta complexidade (analise, compare, argumente, avalie).
-- 'explicacao' = critérios de correção, não resposta completa.`;
+- Distribua entre os formatos: A) Definição sem pista, B) Identificação/Nomeação, C) Listagem + Explicação, D) Aplicação em Cenário — NÃO repita sempre "Explique o que foi dito no enunciado".
+- REGRAS ANTI-DICA: se a pergunta é "O que é X?", NÃO descreva X no enunciado; evite entregar palavras-chave que denunciem o termo pedido.
+- 'explicacao' = checklist de correção (definição, 1 exemplo, 1 contraexemplo/limitação quando aplicável, precisão de termos) — não forneça a resposta completa pronta.`;
   }
  
   // ── Prompt principal ─────────────────────────────────────────────
