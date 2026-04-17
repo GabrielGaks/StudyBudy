@@ -3,14 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Quiz Master AI</title>
+    <title>Study Buddy</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="styles.css">
 </head>
 <body>
     <header>
         <div class="header-container">
-            <h1>Quiz<span>Master</span></h1>
+            <h1>Study<span>Buddy</span></h1>
             <p>O seu gerador de conhecimento</p>
         </div>
     </header>
@@ -32,7 +32,7 @@
                     <div class="card-icon">🤖</div>
                     <h3>Gerar com IA</h3>
                     <p>Cole um texto e nossa IA criará o quiz para você automaticamente.</p>
-                    <button class="btn btn-primary" id="btn-goto-ai">Inserir Texto</button>
+                    <button class="btn btn-primary full-width" id="btn-goto-ai">Inserir Texto</button>
                 </div>
             </div>
         </section>
@@ -40,11 +40,11 @@
         <section id="screen-csv-prompt" class="screen hidden">
             <button class="btn-icon btn-back" data-target="home">← Voltar</button>
             <h2>Passo 1 — Gerar Prompt para IA Externa</h2>
-            <p style="color: var(--text-sec); margin-bottom: 20px;">Preencha os campos abaixo para montar um prompt que você usará em uma IA externa (ex: ChatGPT). Depois, volte aqui para importar o CSV gerado.</p>
+            <p class="section-intro">Preencha os campos abaixo para montar um prompt que você usará em uma IA externa. Depois, volte aqui para importar o CSV gerado.</p>
 
             <div class="form-group row-group">
-                <input type="text" id="prompt-theme" placeholder="Tema Geral (ex: Biologia)" style="flex: 2;">
-                <input type="number" id="prompt-csv-amount" title="Qtd. de Perguntas" value="10" min="1" max="50" style="flex: 1;">
+                <input type="text" id="prompt-theme" placeholder="Tema Geral (ex: Biologia)" class="grow-2">
+                <input type="number" id="prompt-csv-amount" title="Qtd. de Perguntas" value="10" min="1" max="50" class="grow-1">
             </div>
 
             <div class="form-group">
@@ -52,17 +52,18 @@
                     <option value="objetivas">Apenas Objetivas</option>
                     <option value="discursivas">Apenas Discursivas</option>
                     <option value="mistas">Mistas (Objetivas e Discursivas)</option>
+                    <option value="verdadeiro_falso">Verdadeiro ou Falso</option>
                 </select>
             </div>
 
             <div class="form-group">
-                <textarea id="prompt-content" placeholder="Especifique o Conteúdo (ex: Mitose e meiose)" rows="3"></textarea>
+                <textarea id="prompt-content" placeholder="Especifique o conteúdo (ex: Mitose e meiose)" rows="3"></textarea>
             </div>
 
             <button class="btn btn-primary full-width" id="btn-generate-prompt">Montar Prompt</button>
 
             <div id="prompt-result-container" class="hidden mt-4">
-                <textarea id="prompt-result" rows="6" readonly class="readonly-textarea"></textarea>
+                <textarea id="prompt-result" rows="12" readonly class="readonly-textarea"></textarea>
                 <button class="btn btn-outline full-width mt-2" id="btn-copy-prompt">📋 Copiar para Prancheta</button>
                 <button class="btn btn-primary full-width mt-2 hidden" id="btn-go-csv-import">Continuar para importar CSV →</button>
             </div>
@@ -76,12 +77,14 @@
                 <p><strong>Requisitos mínimos do CSV:</strong></p>
                 <ul>
                     <li>Deve ter um cabeçalho com ao menos a coluna <code>pergunta</code>.</li>
-                    <li>Para questões objetivas: colunas <code>opcao_a</code> até <code>opcao_d</code> e <code>resposta_correta</code> com valor A, B, C ou D.</li>
-                    <li>Para discursivas: coluna <code>tipo=discursiva</code> — as opções podem ficar vazias.</li>
+                    <li>Para questões objetivas: colunas <code>opcao_a</code> até <code>opcao_d</code> e <code>resposta_correta</code> com valor <code>A</code>, <code>B</code>, <code>C</code> ou <code>D</code>.</li>
+                    <li>Para discursivas: coluna <code>tipo=discursiva</code>. As opções podem ficar vazias.</li>
+                    <li>Para verdadeiro ou falso: use <code>tipo=vf</code>, preencha <code>opcao_a</code>, <code>opcao_b</code> e use <code>resposta_correta</code> como <code>A</code> ou <code>B</code>.</li>
                 </ul>
             </div>
 
             <input type="file" id="csv-input" accept=".csv" class="hidden">
+
             <div class="import-action-buttons mt-4">
                 <button class="btn btn-primary full-width" id="btn-upload-csv">📂 Importar arquivo CSV</button>
                 <button class="btn btn-outline full-width" id="btn-show-paste-csv">📋 Colar CSV</button>
@@ -98,7 +101,11 @@
         <section id="screen-ai" class="screen hidden">
             <button class="btn-icon btn-back" data-target="home">← Voltar</button>
             <h2>Gerador de Perguntas IA</h2>
-            <p>Cole o conteúdo de estudo abaixo para gerar perguntas.</p>
+            <p>Cole o conteúdo de estudo abaixo e gere perguntas com a mesma base pedagógica do prompt da IA externa.</p>
+
+            <div class="form-group">
+                <input type="text" id="ai-theme" placeholder="Tema principal do material (opcional)">
+            </div>
 
             <div class="form-group">
                 <textarea id="ai-context" placeholder="Cole o texto base para as perguntas aqui..." rows="6"></textarea>
@@ -106,16 +113,26 @@
 
             <div class="form-group row-group">
                 <label for="ai-q-amount">Quantidade de perguntas:</label>
-                <input type="number" id="ai-q-amount" min="1" max="20" value="5">
+                <input type="number" id="ai-q-amount" min="1" max="50" value="5">
+            </div>
+
+            <div class="form-group">
+                <label for="ai-q-type" class="field-label">Tipo de perguntas:</label>
+                <select id="ai-q-type">
+                    <option value="objetivas">Apenas Objetivas</option>
+                    <option value="discursivas">Apenas Discursivas</option>
+                    <option value="mistas">Mistas (Objetivas, Discursivas e V/F)</option>
+                    <option value="verdadeiro_falso">Verdadeiro ou Falso</option>
+                </select>
             </div>
 
             <div id="ai-error" class="error-text hidden"></div>
 
-            <button class="btn btn-primary full-width" id="btn-generate-ai">Gerar Perguntas (Simulação)</button>
+            <button class="btn btn-primary full-width" id="btn-generate-ai">Gerar Perguntas com a IA Nativa</button>
 
             <div id="ai-loading" class="loading-overlay hidden">
                 <div class="spinner"></div>
-                <p>Analisando texto e gerando perguntas...</p>
+                <p>A Study Buddy AI está analisando o conteúdo e montando o quiz...</p>
             </div>
         </section>
 
@@ -160,7 +177,7 @@
         </section>
 
         <section id="screen-quiz" class="screen hidden">
-            <button class="btn-icon btn-back" data-target="home" onclick="if(!confirm('Tem certeza? Seu progresso atual será perdido.')) event.stopPropagation();">← Abandonar Quiz</button>
+            <button class="btn-icon btn-back" data-target="home" id="btn-quit-quiz">← Abandonar Quiz</button>
             <div class="quiz-header">
                 <div class="progress-bar">
                     <div class="progress-fill" id="progress-fill"></div>
@@ -221,9 +238,11 @@
             <h3 class="mt-4">Detalhes das Respostas:</h3>
             <div class="review-list" id="review-list"></div>
 
-            <div class="actions center mt-4" style="display: flex; flex-direction: column; gap: 10px; align-items: center;">
+            <div class="actions center mt-4 result-actions">
+                <button class="btn btn-primary full-width hidden" id="btn-correct-discursive-ai">Corrigir com a Study Buddy AI</button>
                 <button class="btn btn-success full-width hidden" id="btn-eval-discursive">Obter Prompt de Avaliação das Discursivas</button>
-                <div style="display: flex; gap: 10px;">
+                <div id="discursive-correction-status" class="helper-text hidden"></div>
+                <div class="result-secondary-actions">
                     <button class="btn btn-primary" id="btn-redo-quiz">Refazer Mesmo Quiz</button>
                     <button class="btn btn-outline" id="btn-new-quiz">Novo Quiz</button>
                 </div>

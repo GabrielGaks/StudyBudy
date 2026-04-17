@@ -1,64 +1,89 @@
 // --- STATE MANAGEMENT ---
 const state = {
     questions: [],
+    activeQuestions: [],
     currentQIndex: 0,
-    userAnswers: [], // stores selected option key ('A', 'B', 'C', 'D') for each question
+    userAnswers: [],
+    discursiveCorrections: {},
     settings: {
         immediateFeedback: false,
         shuffleOptions: true,
         allowBack: true,
-        mode: 'single' // 'single' or 'all'
+        mode: "single"
     }
 };
 
+const OPTION_KEYS = ["A", "B", "C", "D"];
+const HF_ROUTER_URL = "https://router.huggingface.co/v1/chat/completions";
+const HF_MODEL = "google/gemma-4-31B-it:fastest";
+const HF_TOKEN = "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";
+const QUESTION_TYPE_MAP = {
+    objetivas: "objetiva",
+    objetiva: "objetiva",
+    discursivas: "discursiva",
+    discursiva: "discursiva",
+    mistas: "mista",
+    mista: "mista",
+    verdadeiro_falso: "vf",
+    "verdadeiro ou falso": "vf",
+    vf: "vf",
+    v_f: "vf"
+};
+
 // --- DOM ELEMENTS ---
-const screens = document.querySelectorAll('.screen');
+const screens = document.querySelectorAll(".screen");
 
-// Buttons / Interactions
-const promptTheme = document.getElementById('prompt-theme');
-const promptCsvAmount = document.getElementById('prompt-csv-amount');
-const promptQType = document.getElementById('prompt-q-type');
-const promptContent = document.getElementById('prompt-content');
-const btnGeneratePrompt = document.getElementById('btn-generate-prompt');
-const promptResultContainer = document.getElementById('prompt-result-container');
-const promptResult = document.getElementById('prompt-result');
-const btnCopyPrompt = document.getElementById('btn-copy-prompt');
-const btnGoCsvImport = document.getElementById('btn-go-csv-import');
-const csvInput = document.getElementById('csv-input');
-const btnUploadCsv = document.getElementById('btn-upload-csv');
-const btnShowPasteCsv = document.getElementById('btn-show-paste-csv');
-const pasteCsvBox = document.getElementById('paste-csv-box');
-const csvTextInput = document.getElementById('csv-text-input');
-const btnImportCsvText = document.getElementById('btn-import-csv-text');
-const btnGotoAi = document.getElementById('btn-goto-ai');
-const btnGenerateAi = document.getElementById('btn-generate-ai');
-const btnStartQuiz = document.getElementById('btn-start-quiz');
-const btnPrevQ = document.getElementById('btn-prev-q');
-const btnNextQ = document.getElementById('btn-next-q');
-const btnFinishQ = document.getElementById('btn-finish-q');
-const btnSubmitAll = document.getElementById('btn-submit-all');
-const btnRedoQuiz = document.getElementById('btn-redo-quiz');
-const btnNewQuiz = document.getElementById('btn-new-quiz');
-const btnEvalDiscursive = document.getElementById('btn-eval-discursive');
-const backBtns = document.querySelectorAll('.btn-back');
+const promptTheme = document.getElementById("prompt-theme");
+const promptCsvAmount = document.getElementById("prompt-csv-amount");
+const promptQType = document.getElementById("prompt-q-type");
+const promptContent = document.getElementById("prompt-content");
+const btnGeneratePrompt = document.getElementById("btn-generate-prompt");
+const promptResultContainer = document.getElementById("prompt-result-container");
+const promptResult = document.getElementById("prompt-result");
+const btnCopyPrompt = document.getElementById("btn-copy-prompt");
+const btnGoCsvImport = document.getElementById("btn-go-csv-import");
+const csvInput = document.getElementById("csv-input");
+const btnUploadCsv = document.getElementById("btn-upload-csv");
+const btnShowPasteCsv = document.getElementById("btn-show-paste-csv");
+const pasteCsvBox = document.getElementById("paste-csv-box");
+const csvTextInput = document.getElementById("csv-text-input");
+const btnImportCsvText = document.getElementById("btn-import-csv-text");
 
-// Quiz Elements (Single)
-const qCurrentEl = document.getElementById('q-current');
-const qTotalEl = document.getElementById('q-total');
-const progressFill = document.getElementById('progress-fill');
-const questionTextEl = document.getElementById('question-text');
-const optionsContainer = document.getElementById('options-container');
-const explanationContainer = document.getElementById('explanation-container');
-const explanationText = document.getElementById('explanation-text');
-const quizSingleContainer = document.getElementById('quiz-single-container');
-const quizAllContainer = document.getElementById('quiz-all-container');
-const allQuestionsList = document.getElementById('all-questions-list');
+const aiTheme = document.getElementById("ai-theme");
+const aiContext = document.getElementById("ai-context");
+const aiQAmount = document.getElementById("ai-q-amount");
+const aiQType = document.getElementById("ai-q-type");
+const btnGotoAi = document.getElementById("btn-goto-ai");
+const btnGenerateAi = document.getElementById("btn-generate-ai");
 
-// Configuration Elements
-const cfgImmediate = document.getElementById('cfg-immediate');
-const cfgShuffle = document.getElementById('cfg-shuffle-options');
-const cfgAllowBack = document.getElementById('cfg-allow-back');
-const cfgMode = document.getElementById('cfg-mode');
+const btnStartQuiz = document.getElementById("btn-start-quiz");
+const btnPrevQ = document.getElementById("btn-prev-q");
+const btnNextQ = document.getElementById("btn-next-q");
+const btnFinishQ = document.getElementById("btn-finish-q");
+const btnSubmitAll = document.getElementById("btn-submit-all");
+const btnRedoQuiz = document.getElementById("btn-redo-quiz");
+const btnNewQuiz = document.getElementById("btn-new-quiz");
+const btnEvalDiscursive = document.getElementById("btn-eval-discursive");
+const btnCorrectDiscursiveAi = document.getElementById("btn-correct-discursive-ai");
+const btnQuitQuiz = document.getElementById("btn-quit-quiz");
+const correctionStatus = document.getElementById("discursive-correction-status");
+const backBtns = document.querySelectorAll(".btn-back");
+
+const qCurrentEl = document.getElementById("q-current");
+const qTotalEl = document.getElementById("q-total");
+const progressFill = document.getElementById("progress-fill");
+const questionTextEl = document.getElementById("question-text");
+const optionsContainer = document.getElementById("options-container");
+const explanationContainer = document.getElementById("explanation-container");
+const explanationText = document.getElementById("explanation-text");
+const quizSingleContainer = document.getElementById("quiz-single-container");
+const quizAllContainer = document.getElementById("quiz-all-container");
+const allQuestionsList = document.getElementById("all-questions-list");
+
+const cfgImmediate = document.getElementById("cfg-immediate");
+const cfgShuffle = document.getElementById("cfg-shuffle-options");
+const cfgAllowBack = document.getElementById("cfg-allow-back");
+const cfgMode = document.getElementById("cfg-mode");
 
 // --- INIT & UTILS ---
 function init() {
@@ -67,82 +92,279 @@ function init() {
 }
 
 function showScreen(screenId) {
-    screens.forEach(s => s.classList.add('hidden'));
-    document.getElementById(`screen-${screenId}`).classList.remove('hidden');
+    screens.forEach((screen) => {
+        screen.classList.add("hidden");
+        screen.classList.remove("active");
+    });
+
+    const targetScreen = document.getElementById(`screen-${screenId}`);
+    if (targetScreen) {
+        targetScreen.classList.remove("hidden");
+        targetScreen.classList.add("active");
+    }
 }
 
 function attachListeners() {
-    backBtns.forEach(btn => {
-        btn.addEventListener('click', (e) => {
-            showScreen(e.target.dataset.target);
+    backBtns.forEach((btn) => {
+        btn.addEventListener("click", (event) => {
+            if (event.currentTarget.id === "btn-quit-quiz") {
+                const confirmed = window.confirm("Tem certeza? Seu progresso atual será perdido.");
+                if (!confirmed) {
+                    return;
+                }
+            }
+
+            showScreen(event.currentTarget.dataset.target);
         });
     });
 
-    btnGotoAi.addEventListener('click', () => showScreen('ai'));
-    document.getElementById('btn-start-csv').addEventListener('click', () => showScreen('csv-prompt'));
-    document.getElementById('btn-skip-to-import').addEventListener('click', () => showScreen('csv-import'));
-    btnGeneratePrompt.addEventListener('click', generateCSVPrompt);
-    promptQType.addEventListener('change', () => {
-        if (!promptResultContainer.classList.contains('hidden')) {
+    btnGotoAi.addEventListener("click", () => showScreen("ai"));
+    document.getElementById("btn-start-csv").addEventListener("click", () => showScreen("csv-prompt"));
+    document.getElementById("btn-skip-to-import").addEventListener("click", () => showScreen("csv-import"));
+
+    btnGeneratePrompt.addEventListener("click", generateCSVPrompt);
+    promptQType.addEventListener("change", () => {
+        if (!promptResultContainer.classList.contains("hidden")) {
             generateCSVPrompt();
         }
     });
 
-    btnCopyPrompt.addEventListener('click', copyCSVPrompt);
-    btnGoCsvImport.addEventListener('click', () => showScreen('csv-import'));
-    btnUploadCsv.addEventListener('click', () => csvInput.click());
-    btnShowPasteCsv.addEventListener('click', togglePasteCSVBox);
-    csvInput.addEventListener('change', handleCSVUpload);
-    btnImportCsvText.addEventListener('click', handleCSVTextImport);
-    btnGenerateAi.addEventListener('click', handleAIGeneration);
-    btnStartQuiz.addEventListener('click', startQuiz);
+    btnCopyPrompt.addEventListener("click", copyCSVPrompt);
+    btnGoCsvImport.addEventListener("click", () => showScreen("csv-import"));
+    btnUploadCsv.addEventListener("click", () => csvInput.click());
+    btnShowPasteCsv.addEventListener("click", togglePasteCSVBox);
+    csvInput.addEventListener("change", handleCSVUpload);
+    btnImportCsvText.addEventListener("click", handleCSVTextImport);
+    btnGenerateAi.addEventListener("click", handleAIGeneration);
+    btnStartQuiz.addEventListener("click", startQuiz);
 
-    // Quiz navigation
-    btnPrevQ.addEventListener('click', () => changeQuestion(-1));
-    btnNextQ.addEventListener('click', () => changeQuestion(1));
-    btnFinishQ.addEventListener('click', finishQuiz);
-    btnSubmitAll.addEventListener('click', finishQuiz);
+    btnPrevQ.addEventListener("click", () => changeQuestion(-1));
+    btnNextQ.addEventListener("click", () => changeQuestion(1));
+    btnFinishQ.addEventListener("click", finishQuiz);
+    btnSubmitAll.addEventListener("click", finishQuiz);
 
-    // End/Restart
-    btnRedoQuiz.addEventListener('click', redoQuiz);
-    btnNewQuiz.addEventListener('click', () => {
-        state.questions = [];
-        showScreen('home');
+    btnRedoQuiz.addEventListener("click", redoQuiz);
+    btnNewQuiz.addEventListener("click", () => {
+        resetLoadedQuiz([]);
+        showScreen("home");
     });
-    
-    btnEvalDiscursive.addEventListener('click', generateEvaluationPrompt);
 
-    // Save settings on change
-    [cfgImmediate, cfgShuffle, cfgAllowBack, cfgMode].forEach(el => {
-        el.addEventListener('change', saveSettings);
+    btnEvalDiscursive.addEventListener("click", generateEvaluationPrompt);
+    btnCorrectDiscursiveAi.addEventListener("click", correctDiscursiveAnswersWithAI);
+
+    [cfgImmediate, cfgShuffle, cfgAllowBack, cfgMode].forEach((element) => {
+        element.addEventListener("change", saveSettings);
     });
 }
 
 function shuffleArray(array) {
-    let curId = array.length;
-    while (0 !== curId) {
-        let randId = Math.floor(Math.random() * curId);
-        curId -= 1;
-        let tmp = array[curId];
-        array[curId] = array[randId];
-        array[randId] = tmp;
+    let currentIndex = array.length;
+
+    while (currentIndex !== 0) {
+        const randomIndex = Math.floor(Math.random() * currentIndex);
+        currentIndex -= 1;
+
+        const temporaryValue = array[currentIndex];
+        array[currentIndex] = array[randomIndex];
+        array[randomIndex] = temporaryValue;
     }
+
     return array;
+}
+
+function hasAnswer(answer) {
+    if (typeof answer === "string") {
+        return answer.trim() !== "";
+    }
+
+    return answer !== null && answer !== undefined;
+}
+
+function escapeHtml(value) {
+    return String(value)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#39;");
+}
+
+function resetLoadedQuiz(questions) {
+    state.questions = questions;
+    state.activeQuestions = [];
+    state.currentQIndex = 0;
+    state.userAnswers = [];
+    state.discursiveCorrections = {};
+    setCorrectionStatus("");
+    btnCorrectDiscursiveAi.disabled = false;
+    btnCorrectDiscursiveAi.textContent = "Corrigir com a Study Buddy AI";
+}
+
+function setCorrectionStatus(message, tone = "neutral") {
+    correctionStatus.classList.remove("hidden", "status-loading", "status-success", "status-error");
+
+    if (!message) {
+        correctionStatus.textContent = "";
+        correctionStatus.classList.add("hidden");
+        return;
+    }
+
+    correctionStatus.textContent = message;
+    if (tone === "loading") {
+        correctionStatus.classList.add("status-loading");
+    } else if (tone === "success") {
+        correctionStatus.classList.add("status-success");
+    } else if (tone === "error") {
+        correctionStatus.classList.add("status-error");
+    }
+}
+
+function loadQuestionsIntoState(questions) {
+    resetLoadedQuiz(questions);
+    showScreen("config");
+}
+
+function normalizeQuestionTypeValue(rawType) {
+    const normalized = String(rawType || "").trim().toLowerCase();
+    return QUESTION_TYPE_MAP[normalized] || "";
+}
+
+function normalizeLevelValue(rawLevel) {
+    const normalized = String(rawLevel || "").trim().toLowerCase();
+    if (["facil", "fácil"].includes(normalized)) {
+        return "facil";
+    }
+    if (["medio", "médio"].includes(normalized)) {
+        return "medio";
+    }
+    if (["dificil", "difícil"].includes(normalized)) {
+        return "dificil";
+    }
+    return normalized || "medio";
+}
+
+function normalizeLetterAnswer(rawAnswer) {
+    const normalized = String(rawAnswer || "").trim().toUpperCase();
+    return OPTION_KEYS.includes(normalized) ? normalized : "";
+}
+
+function normalizeTrueFalseAnswer(rawAnswer) {
+    const normalized = String(rawAnswer || "").trim().toLowerCase();
+
+    if (["a", "v", "verdadeiro", "true"].includes(normalized)) {
+        return "A";
+    }
+    if (["b", "f", "falso", "false"].includes(normalized)) {
+        return "B";
+    }
+
+    return "";
+}
+
+function getOptionKeysForQuestion(question) {
+    return OPTION_KEYS.filter((key) => {
+        const value = question[`opcao_${key.toLowerCase()}`];
+        return typeof value === "string" && value.trim() !== "";
+    });
+}
+
+function inferQuestionTypeFromData(rawQuestion, fallbackType = "") {
+    const explicitType = normalizeQuestionTypeValue(rawQuestion.tipo || fallbackType);
+    if (explicitType && explicitType !== "mista") {
+        return explicitType;
+    }
+
+    const optionKeys = getOptionKeysForQuestion(rawQuestion);
+    if (optionKeys.length === 0) {
+        return "discursiva";
+    }
+    if (optionKeys.length === 2) {
+        return "vf";
+    }
+
+    return "objetiva";
+}
+
+function normalizeQuestionRecord(rawQuestion, fallbackType = "") {
+    const question = {
+        pergunta: String(rawQuestion.pergunta || "").trim(),
+        explicacao: String(rawQuestion.explicacao || "").trim(),
+        tema: String(rawQuestion.tema || "").trim(),
+        nivel: normalizeLevelValue(rawQuestion.nivel),
+        tipo: "",
+        opcao_a: String(rawQuestion.opcao_a || "").trim(),
+        opcao_b: String(rawQuestion.opcao_b || "").trim(),
+        opcao_c: String(rawQuestion.opcao_c || "").trim(),
+        opcao_d: String(rawQuestion.opcao_d || "").trim(),
+        resposta_correta: ""
+    };
+
+    if (!question.pergunta) {
+        return null;
+    }
+
+    question.tipo = inferQuestionTypeFromData(question, fallbackType);
+
+    if (question.tipo === "discursiva") {
+        question.opcao_a = "";
+        question.opcao_b = "";
+        question.opcao_c = "";
+        question.opcao_d = "";
+        question.resposta_correta = "";
+        return question;
+    }
+
+    if (question.tipo === "vf") {
+        question.opcao_a = question.opcao_a || "Verdadeiro";
+        question.opcao_b = question.opcao_b || "Falso";
+        question.opcao_c = "";
+        question.opcao_d = "";
+        question.resposta_correta = normalizeTrueFalseAnswer(rawQuestion.resposta_correta);
+        return question.resposta_correta ? question : null;
+    }
+
+    question.resposta_correta = normalizeLetterAnswer(rawQuestion.resposta_correta);
+    const optionKeys = getOptionKeysForQuestion(question);
+
+    if (optionKeys.length === 4 && optionKeys.includes(question.resposta_correta)) {
+        return question;
+    }
+
+    return null;
+}
+
+function normalizeQuestionsPayload(rawQuestions, fallbackType = "") {
+    if (!Array.isArray(rawQuestions)) {
+        throw new Error("A IA não retornou uma lista válida de perguntas.");
+    }
+
+    const normalizedQuestions = rawQuestions
+        .map((question) => normalizeQuestionRecord(question, fallbackType))
+        .filter(Boolean);
+
+    if (!normalizedQuestions.length) {
+        throw new Error("A IA retornou perguntas, mas nenhuma estava em um formato utilizável.");
+    }
+
+    return normalizedQuestions;
 }
 
 // --- LOCAL STORAGE ---
 function loadSettings() {
-    const saved = localStorage.getItem('quizSettings');
-    if (saved) {
-        try {
-            state.settings = JSON.parse(saved);
-            cfgImmediate.checked = state.settings.immediateFeedback;
-            cfgShuffle.checked = state.settings.shuffleOptions;
-            cfgAllowBack.checked = state.settings.allowBack;
-            cfgMode.value = state.settings.mode;
-        } catch (e) {
-            console.error("Error loading settings");
-        }
+    const saved = localStorage.getItem("quizSettings");
+
+    if (!saved) {
+        return;
+    }
+
+    try {
+        state.settings = JSON.parse(saved);
+        cfgImmediate.checked = state.settings.immediateFeedback;
+        cfgShuffle.checked = state.settings.shuffleOptions;
+        cfgAllowBack.checked = state.settings.allowBack;
+        cfgMode.value = state.settings.mode;
+    } catch (error) {
+        console.error("Erro ao carregar configurações.", error);
     }
 }
 
@@ -153,714 +375,987 @@ function saveSettings() {
         allowBack: cfgAllowBack.checked,
         mode: cfgMode.value
     };
-    localStorage.setItem('quizSettings', JSON.stringify(state.settings));
+
+    localStorage.setItem("quizSettings", JSON.stringify(state.settings));
+}
+
+// --- QUESTION GENERATION RULES ---
+function getProhibitedLanguageList() {
+    return [
+        "apenas",
+        "somente",
+        "só",
+        "unicamente",
+        "exclusivamente",
+        "exceto",
+        "a única",
+        "sempre",
+        "nunca",
+        "jamais",
+        "obrigatoriamente",
+        "necessariamente",
+        "proibido",
+        "vedado",
+        "correta",
+        "incorreta",
+        "errada",
+        "todas",
+        "nenhuma"
+    ];
+}
+
+function getRulesByQuestionType(questionType) {
+    const prohibitedLanguage = getProhibitedLanguageList();
+
+    const objectiveRules = {
+        tipo_obrigatorio: "objetiva",
+        proibido_gerar: "questoes discursivas e verdadeiro_falso",
+        regras_estruturais: [
+            "Cada questão deve ter exatamente 4 opções (A, B, C, D) com uma única resposta correta.",
+            "Proibido usar: 'Todas as anteriores', 'Nenhuma das anteriores', 'A e B estão corretas' ou variações.",
+            "A coluna 'resposta_correta' deve conter apenas a letra maiúscula: A, B, C ou D.",
+            "Distribuir a posição da resposta correta de forma equilibrada entre A, B, C e D."
+        ],
+        paralelismo_e_equilibrio: [
+            "Todas as 4 opções devem ter comprimento textual similar (±20% de caracteres).",
+            "Todas as 4 opções devem ter a mesma estrutura gramatical, formato e tom.",
+            "Todas as 4 opções devem ter nível semelhante de detalhamento técnico.",
+            "Proibido que a alternativa correta seja sistematicamente mais longa ou melhor escrita que as demais."
+        ],
+        consistencia_de_dominio: [
+            "As 4 alternativas devem pertencer ao mesmo contexto conceitual e ao mesmo nível de abstração.",
+            "Não misturar temas fora do tópico principal nas alternativas."
+        ],
+        anti_pistas: [
+            "Se uma alternativa contiver um termo técnico ausente nas outras, reescrever as demais para incluir termos do mesmo domínio.",
+            "Proibido que a correta seja a única com palavra técnica-chave, sigla, valor numérico, símbolo, fórmula ou exemplo.",
+            "Proibido que uma alternativa seja obviamente absurda ou desconexa."
+        ],
+        proibicoes_linguagem: {
+            palavras_proibidas_nas_alternativas_e_explicacao: prohibitedLanguage,
+            proibido_negacao_forte_como_pista_principal: true,
+            preferir_formulacoes_afirmativas_e_plausiveis: true
+        },
+        distratores: {
+            descricao: "Os distratores devem representar erros conceituais reais que um aluno cometeria.",
+            regras_para_as_3_incorretas: [
+                "Mencionar termos técnicos do mesmo tópico.",
+                "Descrever uma regra real ou próxima, mas aplicada ao caso errado.",
+                "Errar por um detalhe sutil de condição, causa, efeito ou consequência."
+            ],
+            quase_correta: "Em cada questão, 1 alternativa errada deve ser quase correta, mas com um detalhe sutil inconsistente."
+        },
+        explicacao: {
+            estilo: "neutra e conceitual",
+            regras: [
+                "Descrever o raciocínio e o critério que torna a resposta correta.",
+                "Não citar letras (A, B, C, D).",
+                "Não dizer 'a correta é...' nem fazer eliminação das outras.",
+                "Manter curta e técnica (2-5 linhas), focada no conceito."
+            ]
+        }
+    };
+
+    const discursiveRules = {
+        tipo_obrigatorio: "discursiva",
+        proibido_gerar: "questoes de multipla escolha e verdadeiro_falso",
+        regras_estruturais: [
+            "As colunas opcao_a, opcao_b, opcao_c, opcao_d e resposta_correta devem ficar vazias.",
+            "Formular perguntas que exijam argumentação, análise crítica, síntese ou aplicação contextualizada.",
+            "Usar verbos de comando precisos: 'Analise...', 'Compare e contraste...', 'Argumente...', 'Elabore...', 'Avalie criticamente...'."
+        ],
+        variedade_obrigatoria_de_formatos: [
+            "Definição sem pista.",
+            "Identificação ou nomeação.",
+            "Listagem com explicação.",
+            "Aplicação em cenário real."
+        ],
+        anti_dica: [
+            "Se a pergunta é 'O que é X?', não descrever X no enunciado.",
+            "Evitar frases do tipo 'X é quando...' no próprio enunciado.",
+            "Evitar entregar palavras-chave que denunciem o termo pedido."
+        ],
+        explicacao: {
+            estilo: "checklist de correção",
+            deve_conter: ["definição", "1 exemplo", "1 limitação ou contraexemplo quando aplicável", "precisão de termos"],
+            proibido: "Fornecer a resposta completa pronta."
+        }
+    };
+
+    const vfRules = {
+        tipo_obrigatorio: "vf",
+        proibido_gerar: "questoes discursivas e alternativas A-D completas",
+        regras_estruturais: [
+            "Cada questão deve ser classificada como verdadeiro ou falso com apenas 2 opções.",
+            "Use obrigatoriamente opcao_a='Verdadeiro' e opcao_b='Falso'.",
+            "As colunas opcao_c e opcao_d devem ficar vazias.",
+            "A coluna resposta_correta deve conter apenas A ou B."
+        ],
+        qualidade_da_afirmacao: [
+            "A afirmação da pergunta deve ser plausível e tecnicamente precisa para gerar dúvida real.",
+            "Evitar afirmações óbvias ou absurdas.",
+            "Os erros das afirmações falsas devem ser sutis, conceituais e pedagogicamente úteis."
+        ],
+        explicacao: {
+            estilo: "curta e técnica",
+            regras: [
+                "Explicar o detalhe que torna a afirmação verdadeira ou falsa.",
+                "Não usar linguagem vaga.",
+                "Focar no conceito decisivo."
+            ]
+        }
+    };
+
+    if (questionType === "objetivas") {
+        return objectiveRules;
+    }
+
+    if (questionType === "discursivas") {
+        return discursiveRules;
+    }
+
+    if (questionType === "verdadeiro_falso") {
+        return vfRules;
+    }
+
+    return {
+        tipo_obrigatorio: "mix equilibrado entre objetiva, discursiva e vf",
+        instrucao: "Distribuir as questões de forma equilibrada entre os três formatos, preservando o contexto do material-base.",
+        para_objetivas: objectiveRules,
+        para_discursivas: discursiveRules,
+        para_vf: vfRules
+    };
+}
+
+function getOutputFormatConfig(outputFormat, questionCount) {
+    if (outputFormat === "csv") {
+        return {
+            tipo_saida: "csv",
+            instrucao: "Retornar exclusivamente um bloco CSV puro, sem crases, sem markdown, sem saudações e sem texto antes ou depois.",
+            separador: ",",
+            campos_com_virgula_ou_quebra_de_linha: "envolver em aspas duplas",
+            cabecalho_obrigatorio: "pergunta,opcao_a,opcao_b,opcao_c,opcao_d,resposta_correta,explicacao,tema,nivel,tipo",
+            quantidade_linhas_de_dados: questionCount,
+            valores_validos_coluna_tipo: ["objetiva", "discursiva", "vf"]
+        };
+    }
+
+    return {
+        tipo_saida: "json",
+        instrucao: "Retornar exclusivamente um JSON válido, sem markdown, sem comentários e sem texto antes ou depois.",
+        esquema: {
+            questions: [
+                {
+                    pergunta: "string",
+                    opcao_a: "string",
+                    opcao_b: "string",
+                    opcao_c: "string",
+                    opcao_d: "string",
+                    resposta_correta: "A|B|C|D|''",
+                    explicacao: "string",
+                    tema: "string",
+                    nivel: "facil|medio|dificil",
+                    tipo: "objetiva|discursiva|vf"
+                }
+            ]
+        },
+        regras_extras: [
+            "Para tipo='discursiva', deixar opcao_a até opcao_d e resposta_correta vazios.",
+            "Para tipo='vf', usar exatamente opcao_a='Verdadeiro' e opcao_b='Falso'; opcao_c e opcao_d vazios; resposta_correta=A ou B.",
+            `Gerar exatamente ${questionCount} questões no array questions.`
+        ]
+    };
+}
+
+function buildQuestionGenerationPayload({ theme, content, questionCount, questionType, outputFormat, sourceMode }) {
+    return {
+        persona: "elaborador sênior de avaliações acadêmicas com expertise em design instrucional e psicometria",
+        aviso_sistema: "O output será processado por um parser automatizado. Qualquer desvio de formato causa erro no sistema.",
+        tarefa: "gerar_quiz_estruturado",
+        origem_da_geracao: sourceMode,
+        contexto: {
+            tema_central: theme || "Conhecimentos Gerais",
+            conteudo_especifico: content || "Abordagem ampla do tema",
+            quantidade_questoes: questionCount,
+            tipo_questoes: questionType
+        },
+        regras_por_tipo: getRulesByQuestionType(questionType),
+        qualidade_pedagogica: {
+            taxonomia_bloom_revisada: {
+                lembrar_compreender: "~20% — definições e conceitos-base",
+                aplicar_analisar: "~40% — resolução de problemas, estudos de caso e cenários práticos",
+                avaliar_criar: "~40% — julgamento crítico, proposição de soluções, comparação entre abordagens"
+            },
+            diretrizes_de_formulacao: [
+                "Preferir enunciados contextualizados com cenários, situações-problema ou estudos de caso breves.",
+                "O enunciado deve ser autossuficiente.",
+                "Usar linguagem formal, clara e sem ambiguidades. Evitar duplas negativas.",
+                "Distribuir a coluna nivel de forma balanceada entre facil, medio e dificil."
+            ]
+        },
+        antipadroes_proibidos: [
+            "Perguntas genéricas tipo 'Qual a importância de X?' sem contexto aplicado.",
+            "Alternativas que se eliminam por lógica.",
+            "Enunciados com pistas gramaticais que denunciam a resposta.",
+            "Repetição de palavras do enunciado apenas na alternativa correta.",
+            "Questões com pegadinhas baseadas em detalhes irrelevantes."
+        ],
+        formato_saida: getOutputFormatConfig(outputFormat, questionCount)
+    };
 }
 
 // --- CSV HANDLING ---
 function togglePasteCSVBox() {
-    pasteCsvBox.classList.toggle('hidden');
-    btnShowPasteCsv.textContent = pasteCsvBox.classList.contains('hidden')
-        ? "Colar CSV"
+    pasteCsvBox.classList.toggle("hidden");
+    btnShowPasteCsv.textContent = pasteCsvBox.classList.contains("hidden")
+        ? "📋 Colar CSV"
         : "Ocultar Área de Colagem";
 }
 
 function generateCSVPrompt() {
-  const theme = promptTheme.value.trim();
-  const content = promptContent.value.trim();
-  const qType = promptQType ? promptQType.value : "objetivas";
-  const questionCount = promptCsvAmount
-    ? parseInt(promptCsvAmount.value) || 10
-    : 10;
+    const theme = promptTheme.value.trim();
+    const content = promptContent.value.trim();
+    const questionType = promptQType.value;
+    const questionCount = parseInt(promptCsvAmount.value, 10) || 10;
 
-  if (!theme && !content) {
-    alert("Preencha o tema ou o conteúdo desejado.");
-    return;
-  }
-
-  // ── Regras por tipo ───────────────────────────────────────────────
-  const proibicoes_linguagem = [
-    "apenas", "somente", "só", "unicamente", "exclusivamente", "exceto",
-    "a única", "sempre", "nunca", "jamais", "obrigatoriamente",
-    "necessariamente", "proibido", "vedado", "correta", "incorreta",
-    "errada", "todas", "nenhuma"
-  ];
-
-  const regras_objetivas = {
-    tipo_obrigatorio: "objetiva",
-    proibido_gerar: "questoes discursivas",
-    regras_estruturais: [
-      "Cada questão deve ter exatamente 4 opções (A, B, C, D) com uma única resposta correta.",
-      "Proibido usar: 'Todas as anteriores', 'Nenhuma das anteriores', 'A e B estão corretas' ou variações.",
-      "A coluna 'resposta_correta' deve conter apenas a letra maiúscula: A, B, C ou D.",
-      "Distribuir a posição da resposta correta de forma equilibrada entre A, B, C e D ao longo do CSV."
-    ],
-    paralelismo_e_equilibrio: [
-      "Todas as 4 opções devem ter comprimento textual similar (±20% de caracteres).",
-      "Todas as 4 opções devem ter a mesma estrutura gramatical (todas afirmativas, mesmo formato de frase, mesmo tom).",
-      "Todas as 4 opções devem ter nível semelhante de detalhamento técnico.",
-      "Proibido que a alternativa correta seja sistematicamente mais longa, detalhada ou bem escrita que as demais."
-    ],
-    consistencia_de_dominio: [
-      "As 4 alternativas devem pertencer ao mesmo contexto conceitual e ao mesmo nível de abstração.",
-      "Não misturar temas fora do tópico (ex.: se é sobre árvore rubro-negra, não incluir hashing/heap/grafos nas alternativas)."
-    ],
-    anti_pistas: [
-      "Se uma alternativa contiver um termo técnico ausente nas outras, reescrever as demais para incluírem termos do mesmo domínio.",
-      "Proibido que a correta seja a única com: palavra técnica-chave, sigla, valor numérico, símbolo, fórmula ou exemplo.",
-      "Proibido que uma alternativa seja obviamente absurda ou desconexa."
-    ],
-    proibicoes_linguagem: {
-      palavras_proibidas_nas_alternativas_e_explicacao: proibicoes_linguagem,
-      proibido_negacao_forte_como_pista_principal: true,
-      preferir_formulacoes_afirmativas_e_plausiveis: true
-    },
-    distratores: {
-      descricao: "Os distratores devem representar erros conceituais reais que um aluno cometeria.",
-      regras_para_as_3_incorretas: [
-        "Mencionar termos técnicos do mesmo tópico (mesma família conceitual).",
-        "Descrever uma regra real/próxima, mas aplicada ao gatilho/caso errado.",
-        "Errar por um detalhe sutil (condição, causa/efeito, parte do algoritmo, precondição, consequência)."
-      ],
-      padroes_obrigatorios: [
-        "A) Regra correta do mesmo assunto, mas no momento/caso errado.",
-        "B) Regra correta, mas com condição trocada/invertida (um detalhe muda tudo).",
-        "C) Mistura com conceito vizinho (mesma área), mantendo vocabulário técnico similar."
-      ],
-      quase_correta: "Em cada questão, 1 alternativa errada deve ser quase correta: correta em 80-90%, mas com um detalhe sutil inconsistente."
-    },
-    cobertura_mesmo_subtema: "Todas as alternativas devem pertencer ao mesmo subtema da pergunta (ex.: se a pergunta é sobre rotação, todas devem falar de balanceamento/rotações/cores/invariantes).",
-    explicacao: {
-      estilo: "neutra e conceitual",
-      regras: [
-        "Descrever o raciocínio e o critério que torna a resposta correta.",
-        "Não citar letras (A/B/C/D).",
-        "Não dizer 'a correta é...' nem fazer eliminação das outras.",
-        "Não usar palavras de exclusão/absolutismo.",
-        "Manter curta e técnica (2-5 linhas), focada no conceito."
-      ]
+    if (!theme && !content) {
+        alert("Preencha o tema ou o conteúdo desejado.");
+        return;
     }
-  };
 
-  const regras_discursivas = {
-    tipo_obrigatorio: "discursiva",
-    proibido_gerar: "questoes de multipla escolha",
-    regras_estruturais: [
-      "As colunas opcao_a, opcao_b, opcao_c, opcao_d e resposta_correta devem ficar vazias (sem nenhum caractere).",
-      "Formular perguntas que exijam argumentação, análise crítica ou síntese.",
-      "Usar verbos de comando precisos: 'Analise...', 'Compare e contraste...', 'Argumente...', 'Elabore...', 'Avalie criticamente...'."
-    ],
-    variedade_obrigatoria_de_formatos: [
-      "A) DEFINIÇÃO SEM PISTA: 'O que é ...?', 'Defina ...', 'Qual é o conceito de ...?' — o enunciado não deve conter a definição nem dar sinônimos óbvios.",
-      "B) IDENTIFICAÇÃO/NOMEAÇÃO: 'Qual é o nome do princípio/lei/método que descreve ...?' — pedir para explicar as características.",
-      "C) LISTAGEM + EXPLICAÇÃO: 'Cite 3 elementos/etapas/critérios de ... e explique cada um.'",
-      "D) APLICAÇÃO EM CENÁRIO: dar um mini-caso prático e pedir para identificar o conceito e explicar o raciocínio."
-    ],
-    anti_dica: [
-      "Se a pergunta é 'O que é X?', não descrever X no enunciado.",
-      "Evitar frases do tipo 'X é quando...' no próprio enunciado.",
-      "Evitar entregar palavras-chave que denunciem o termo pedido."
-    ],
-    explicacao: {
-      estilo: "checklist de correção",
-      deve_conter: ["definição", "1 exemplo", "1 contraexemplo ou limitação (quando aplicável)", "precisão de termos"],
-      proibido: "Fornecer a resposta completa pronta."
-    }
-  };
+    const promptPayload = buildQuestionGenerationPayload({
+        theme,
+        content,
+        questionCount,
+        questionType,
+        outputFormat: "csv",
+        sourceMode: "ia_externa"
+    });
 
-  const regras_mistas = {
-    tipo_obrigatorio: "mix (~50% objetiva, ~50% discursiva)",
-    instrucao: "Alternar entre os dois tipos ao longo do CSV.",
-    para_objetivas: {
-      tipo_coluna: "objetiva",
-      regras_resumidas: [
-        "4 opções plausíveis com distratores baseados em erros conceituais reais.",
-        "Comprimento similar entre as opções (±20%). Distribuir a resposta correta entre A-D.",
-        "Proibido: 'Todas/Nenhuma das anteriores' ou combinações.",
-        "'resposta_correta' = apenas a letra (A, B, C ou D).",
-        "Palavras proibidas nas alternativas (ver campo proibicoes_linguagem). Evitar negações fortes.",
-        "Consistência de domínio: todas as 4 alternativas no mesmo contexto conceitual e nível de abstração.",
-        "Paralelismo e densidade técnica: mesma estrutura gramatical, mesmo nível de detalhe, ao menos 1 termo técnico em cada alternativa.",
-        "Anti-pistas: proibido que a correta seja a única com palavra técnica, número, exemplo ou formalismo.",
-        "Incluir 1 alternativa quase correta (correta em 80-90%, mas com 1 detalhe sutil incompatível)."
-      ]
-    },
-    para_discursivas: {
-      tipo_coluna: "discursiva",
-      regras_resumidas: [
-        "Colunas opcao_a até resposta_correta devem ficar vazias.",
-        "Distribuir entre os formatos: A) Definição sem pista, B) Identificação/Nomeação, C) Listagem + Explicação, D) Aplicação em Cenário.",
-        "Anti-dica: não descrever o conceito pedido no próprio enunciado.",
-        "'explicacao' = checklist de correção com definição, 1 exemplo, 1 contraexemplo/limitação (quando aplicável) e precisão de termos."
-      ]
-    }
-  };
-
-  const regras_por_tipo = qType === "objetivas"
-    ? regras_objetivas
-    : qType === "discursivas"
-      ? regras_discursivas
-      : regras_mistas;
-
-  // ── Objeto JSON do prompt ─────────────────────────────────────────
-  const promptObj = {
-    persona: "elaborador sênior de avaliações acadêmicas com expertise em design instrucional e psicometria",
-    aviso_sistema: "O output será processado por um parser CSV automatizado. Qualquer desvio de formato causa erro no sistema.",
-    tarefa: "gerar_csv_quiz",
-    contexto: {
-      tema_central: theme || "Conhecimentos Gerais",
-      conteudo_especifico: content || "Abordagem ampla do tema",
-      quantidade_questoes: questionCount,
-      tipo_questoes: qType
-    },
-    regras_por_tipo,
-    qualidade_pedagogica: {
-      taxonomia_bloom_revisada: {
-        lembrar_compreender: "~20% — definições e conceitos-base",
-        aplicar_analisar: "~40% — resolução de problemas, estudos de caso e cenários práticos",
-        avaliar_criar: "~40% — julgamento crítico, proposição de soluções, comparação entre abordagens"
-      },
-      diretrizes_de_formulacao: [
-        "Preferir enunciados contextualizados com cenários, situações-problema ou estudos de caso breves.",
-        "O enunciado deve ser autossuficiente — o aluno não deve precisar de material externo para responder.",
-        "Usar linguagem formal, clara e sem ambiguidades. Evitar duplas negativas.",
-        "A coluna 'nivel' deve conter exatamente um destes valores em minúsculas: 'facil', 'medio' ou 'dificil'. Distribuir de forma balanceada."
-      ]
-    },
-    antipadroes_proibidos: [
-      "Perguntas genéricas tipo 'Qual a importância de X?' sem contexto aplicado.",
-      "Alternativas que se eliminam por lógica (ex: duas opções mutuamente exclusivas que cobrem todos os casos).",
-      "Enunciados com pistas gramaticais que denunciam a resposta (concordância de gênero/número).",
-      "Repetição de palavras do enunciado apenas na alternativa correta.",
-      "Questões com pegadinhas baseadas em detalhes irrelevantes."
-    ],
-    formato_saida: {
-      instrucao: "Retornar EXCLUSIVAMENTE um bloco CSV puro, sem crases, sem markdown, sem saudações e sem nenhum texto antes ou depois.",
-      separador: ",",
-      campos_com_virgula_ou_quebra_de_linha: "envolver em aspas duplas",
-      cabecalho_obrigatorio: "pergunta,opcao_a,opcao_b,opcao_c,opcao_d,resposta_correta,explicacao,tema,nivel,tipo",
-      quantidade_linhas_de_dados: questionCount,
-      valores_validos_coluna_tipo: ["objetiva", "discursiva"]
-    }
-  };
-
-  // Indented with 2 spaces for human readability in the UI prompt field
-  promptResult.value = JSON.stringify(promptObj, null, 2);
-  promptResultContainer.classList.remove("hidden");
-  btnGoCsvImport.classList.remove("hidden");
-  pasteCsvBox.classList.add("hidden");
-  btnShowPasteCsv.textContent = "Colar CSV";
+    promptResult.value = JSON.stringify(promptPayload, null, 2);
+    promptResultContainer.classList.remove("hidden");
+    btnGoCsvImport.classList.remove("hidden");
+    pasteCsvBox.classList.add("hidden");
+    btnShowPasteCsv.textContent = "📋 Colar CSV";
 }
+
 function copyCSVPrompt() {
     const textToCopy = promptResult.value;
+
     if (navigator.clipboard && window.isSecureContext) {
         navigator.clipboard.writeText(textToCopy).then(showCopiedText);
-    } else {
-        promptResult.select();
-        document.execCommand('copy');
-        showCopiedText();
+        return;
     }
+
+    promptResult.select();
+    document.execCommand("copy");
+    showCopiedText();
 }
 
 function showCopiedText() {
     const originalText = btnCopyPrompt.innerHTML;
     btnCopyPrompt.innerHTML = "✅ Copiado!";
-    setTimeout(() => { btnCopyPrompt.innerHTML = originalText; }, 2000);
+
+    setTimeout(() => {
+        btnCopyPrompt.innerHTML = originalText;
+    }, 2000);
 }
 
-function handleCSVUpload(e) {
-    const file = e.target.files[0];
-    if (!file) return;
+function handleCSVUpload(event) {
+    const file = event.target.files[0];
+    if (!file) {
+        return;
+    }
 
-    const errorEl = document.getElementById('csv-error');
-    errorEl.classList.add('hidden');
+    const errorEl = document.getElementById("csv-error");
+    errorEl.classList.add("hidden");
 
     const reader = new FileReader();
-    reader.onload = function (evt) {
-        const text = evt.target.result;
+    reader.onload = (loadEvent) => {
+        const text = loadEvent.target.result;
+
         try {
             const parsed = parseCSV(text);
-            if (parsed.length === 0) throw new Error("O CSV não contém perguntas válidas.");
-            state.questions = parsed;
-            showScreen('config');
-        } catch (err) {
-            errorEl.textContent = "Erro ao ler CSV: " + err.message;
-            errorEl.classList.remove('hidden');
+            if (parsed.length === 0) {
+                throw new Error("O CSV não contém perguntas válidas.");
+            }
+
+            loadQuestionsIntoState(parsed);
+        } catch (error) {
+            errorEl.textContent = `Erro ao ler CSV: ${error.message}`;
+            errorEl.classList.remove("hidden");
         }
     };
-    reader.onerror = function () {
+
+    reader.onerror = () => {
         errorEl.textContent = "Erro ao carregar o arquivo.";
-        errorEl.classList.remove('hidden');
+        errorEl.classList.remove("hidden");
     };
+
     reader.readAsText(file);
-    e.target.value = null; // reset
+    event.target.value = null;
 }
 
 function handleCSVTextImport() {
-    const errorEl = document.getElementById('csv-error');
+    const errorEl = document.getElementById("csv-error");
     const csvText = csvTextInput.value.trim();
 
-    errorEl.classList.add('hidden');
+    errorEl.classList.add("hidden");
 
     try {
         const parsed = parseCSV(csvText);
-        if (parsed.length === 0) throw new Error("O CSV nÃ£o contÃ©m perguntas vÃ¡lidas.");
-        state.questions = parsed;
-        showScreen('config');
-    } catch (err) {
-        errorEl.textContent = "Erro ao processar o CSV colado: " + err.message;
-        errorEl.classList.remove('hidden');
+        if (parsed.length === 0) {
+            throw new Error("O CSV não contém perguntas válidas.");
+        }
+
+        loadQuestionsIntoState(parsed);
+    } catch (error) {
+        errorEl.textContent = `Erro ao processar o CSV colado: ${error.message}`;
+        errorEl.classList.remove("hidden");
     }
 }
 
 function sanitizeCSVText(text) {
-    if (!text || typeof text !== 'string') return '';
+    if (!text || typeof text !== "string") {
+        return "";
+    }
 
-    let normalized = text.trim().replace(/^\uFEFF/, '');
+    let normalized = text.trim().replace(/^\uFEFF/, "");
     const fencedMatch = normalized.match(/^```(?:csv)?\s*([\s\S]*?)\s*```$/i);
 
     if (fencedMatch) {
         normalized = fencedMatch[1].trim();
     }
 
-    // Normalize common AI typography so pasted CSV still matches the parser.
     normalized = normalized
-        .replace(/[\u201C\u201D]/g, '"')
+        .replace(/[\u201C\u201D]/g, "\"")
         .replace(/[\u2018\u2019]/g, "'");
 
-    // Remove common wrapper leftovers when the model appends JSON/braces after the CSV.
-    normalized = normalized.replace(/[}\]]+\s*$/, '').trim();
+    normalized = normalized.replace(/[}\]]+\s*$/, "").trim();
 
     return normalized;
 }
 
-function parseCSV(text) {
-    text = sanitizeCSVText(text);
-    if (!text) return [];
+function normalizeCSVHeader(header) {
+    const normalized = String(header || "").trim().toLowerCase();
+    const headerMap = {
+        alternativa_a: "opcao_a",
+        alternativa_b: "opcao_b",
+        alternativa_c: "opcao_c",
+        alternativa_d: "opcao_d",
+        resposta: "resposta_correta",
+        justificativa: "explicacao"
+    };
 
-    // Regex for parsing CSV correctly ignoring internal commas in quotes
+    return headerMap[normalized] || normalized;
+}
+
+function parseCSV(text) {
+    const sanitized = sanitizeCSVText(text);
+    if (!sanitized) {
+        return [];
+    }
+
     const pattern = new RegExp(
-        (
-            "(\\,|\\r?\\n|\\r|^)" + // Delimiters
-            "(?:\"([^\"]*(?:\"\"[^\"]*)*)\"|" + // Quoted fields
-            "([^\"\\,\\r\\n]*))" // Standard fields
-        ), "gi"
+        "(\\,|\\r?\\n|\\r|^)(?:\"([^\"]*(?:\"\"[^\"]*)*)\"|([^\"\\,\\r\\n]*))",
+        "gi"
     );
 
-    let data = [[]];
+    const data = [[]];
     let matches = null;
-    while (matches = pattern.exec(text)) {
-        let matchedDelimiter = matches[1];
+
+    while ((matches = pattern.exec(sanitized)) !== null) {
+        const matchedDelimiter = matches[1];
         if (matchedDelimiter.length && matchedDelimiter !== ",") {
             data.push([]);
         }
-        let matchedValue;
-        if (matches[2]) {
-            matchedValue = matches[2].replace(new RegExp("\"\"", "g"), "\"");
-        } else {
-            matchedValue = matches[3];
-        }
+
+        const matchedValue = matches[2]
+            ? matches[2].replace(/""/g, "\"")
+            : matches[3];
+
         data[data.length - 1].push(matchedValue);
     }
 
-    if (data.length < 2) return [];
+    if (data.length < 2) {
+        return [];
+    }
 
-    const headers = data[0].map(h => h ? h.trim().toLowerCase() : '');
-    if (!headers.includes('pergunta')) {
+    const headers = data[0].map((header) => normalizeCSVHeader(header));
+    if (!headers.includes("pergunta")) {
         throw new Error("A coluna 'pergunta' é obrigatória no CSV.");
     }
 
     const questions = [];
-    for (let i = 1; i < data.length; i++) {
-        let row = data[i];
-        if (row.length < 1) continue;
 
-        let q = {};
-        headers.forEach((h, idx) => {
-            if (h) q[h] = row[idx] ? row[idx].trim() : '';
+    for (let index = 1; index < data.length; index += 1) {
+        const row = data[index];
+        if (!row.length) {
+            continue;
+        }
+
+        const rawQuestion = {};
+        headers.forEach((header, headerIndex) => {
+            if (header) {
+                rawQuestion[header] = row[headerIndex] ? row[headerIndex].trim() : "";
+            }
         });
 
-        if (!q.pergunta) continue;
-
-        const tipo = (q.tipo || 'objetiva').toLowerCase().trim();
-        q.tipo = tipo;
-
-        if (tipo === 'discursiva') {
-            questions.push(q);
-        } else {
-            // Objective logic default
-            const hasOptions = q.opcao_a && q.opcao_b && q.opcao_c && q.opcao_d;
-            if (hasOptions && q.resposta_correta && ['A', 'B', 'C', 'D'].includes(q.resposta_correta.toUpperCase())) {
-                q.resposta_correta = q.resposta_correta.toUpperCase();
-                questions.push(q);
-            }
+        const normalizedQuestion = normalizeQuestionRecord(rawQuestion);
+        if (normalizedQuestion) {
+            questions.push(normalizedQuestion);
         }
     }
+
     return questions;
 }
 
-// --- AI GENERATION ---
-async function handleAIGeneration() {
-    const text = document.getElementById('ai-context').value.trim();
-    const amount = document.getElementById('ai-q-amount').value;
-    const errorEl = document.getElementById('ai-error');
+// --- AI HELPERS ---
+function getHuggingFaceToken() {
+    const token = window.HF_TOKEN || localStorage.getItem("hf_token") || HF_TOKEN || "";
 
-    if (!text) {
-        errorEl.textContent = "Por favor, insira um texto base.";
-        errorEl.classList.remove('hidden');
-        return;
+    if (!token || token === "YOUR_HUGGINGFACE_TOKEN_HERE") {
+        throw new Error("Defina seu token do Hugging Face no frontend.");
     }
 
-    errorEl.classList.add('hidden');
-    document.getElementById('ai-loading').classList.remove('hidden');
-
-    try {
-        const aiData = await callHuggingFaceAPI(text, amount);
-        state.questions = aiData.questions;
-        document.getElementById('ai-loading').classList.add('hidden');
-        showScreen('config');
-    } catch (e) {
-        document.getElementById('ai-loading').classList.add('hidden');
-        errorEl.textContent = "Erro na IA: " + e.message;
-        errorEl.classList.remove('hidden');
-    }
+    return token;
 }
 
-async function callHuggingFaceAPI(text, amount) {
-    // Insira seu Token (Access Token) do Hugging Face. (Geralmente começa com hf_)
-    const HF_TOKEN = "YOUR_HUGGINGFACE_TOKEN_HERE";
+function extractAIMessageContent(data) {
+    const content = data?.choices?.[0]?.message?.content;
 
-    // Modelo roteado solicitado pelo usuário
-    const MODEL = "google/gemma-4-31B-it:fastest";
-
-    const prompt = `Gere exatamente ${amount} perguntas de múltipla escolha EM PORTUGUÊS (PT-BR), baseadas rigorosamente neste texto:
-"${text}"
-
-REGRAS DE DIFICULDADE (MUITO IMPORTANTE):
-1. As opções alternativas de resposta devem ser conceitualmente muito parecidas e plausíveis, para gerar alto nível de dúvida.
-2. As opções A, B, C e D devem ter comprimentos visuais idênticos ou muito parecidos. A alternativa correta NÃO DEVE ser a opção de texto mais longo, nem a mais bem explicativa. Camufle-a deixado-a com tamanho padrão/normal.
-
-Você DEVE retornar APENAS UM JSON VÁLIDO e NADA MAIS. Não inclua \`\`\`json ou marcações markdown, retorne a string bruta do JSON.
-Use este esquema exato:
-{
-  "questions": [
-    {
-      "pergunta": "...",
-      "opcao_a": "...",
-      "opcao_b": "...",
-      "opcao_c": "...",
-      "opcao_d": "...",
-      "resposta_correta": "A",
-      "explicacao": "...",
-      "nivel": "Fácil, Médio ou Difícil",
-      "tipo": "objetiva"
+    if (typeof content === "string") {
+        return content.trim();
     }
-  ]
-}
-A "resposta_correta" deve ser estritamente uma única letra maiúscula: "A", "B", "C" ou "D". A marcação de 'tipo' deve ser exata 'objetiva'.`;
 
-    const response = await fetch("https://router.huggingface.co/v1/chat/completions", {
+    if (Array.isArray(content)) {
+        return content
+            .map((item) => {
+                if (typeof item === "string") {
+                    return item;
+                }
+
+                if (item?.type === "text") {
+                    return item.text || "";
+                }
+
+                return "";
+            })
+            .join("\n")
+            .trim();
+    }
+
+    throw new Error("A resposta da IA veio sem conteúdo legível.");
+}
+
+function extractJsonBlock(rawContent) {
+    const content = String(rawContent || "")
+        .replace(/```json/gi, "")
+        .replace(/```/g, "")
+        .trim();
+
+    const jsonMatch = content.match(/\{[\s\S]*\}/);
+    if (!jsonMatch) {
+        throw new Error("A IA não retornou um JSON utilizável.");
+    }
+
+    return jsonMatch[0];
+}
+
+async function requestStudyBuddyAI({ systemPrompt, userPayload, temperature = 0.35 }) {
+    const token = getHuggingFaceToken();
+
+    const response = await fetch(HF_ROUTER_URL, {
         method: "POST",
         headers: {
-            "Authorization": `Bearer ${HF_TOKEN}`,
+            Authorization: `Bearer ${token}`,
             "Content-Type": "application/json"
         },
         body: JSON.stringify({
-            model: MODEL,
+            model: HF_MODEL,
             messages: [
-                { role: "user", content: prompt }
-            ]
+                {
+                    role: "system",
+                    content: systemPrompt
+                },
+                {
+                    role: "user",
+                    content: typeof userPayload === "string" ? userPayload : JSON.stringify(userPayload, null, 2)
+                }
+            ],
+            temperature
         })
     });
 
     if (!response.ok) {
-        let errMsg = "Falha na comunicação com a API HuggingFace Router";
-        try {
-            const errBody = await response.json();
-            if (errBody.error) errMsg = errBody.error;
-        } catch (e) { }
+        let errorMessage = "Falha na comunicação com a Study Buddy AI.";
 
-        throw new Error(`Erro ${response.status}: ${errMsg}`);
+        try {
+            const errorBody = await response.json();
+            if (errorBody.error) {
+                errorMessage = typeof errorBody.error === "string"
+                    ? errorBody.error
+                    : JSON.stringify(errorBody.error);
+            }
+        } catch (error) {
+            console.error("Erro ao ler payload de erro da API.", error);
+        }
+
+        throw new Error(`Erro ${response.status}: ${errorMessage}`);
     }
 
     const data = await response.json();
-    let content = data.choices[0].message.content;
-
-    // Clean potential markdown blocks
-    content = content.replace(/```json/gi, '').replace(/```/gi, '').trim();
-
-    return JSON.parse(content);
+    return extractAIMessageContent(data);
 }
 
+function parseAIQuestionsResponse(rawContent, requestedType) {
+    const parsed = JSON.parse(extractJsonBlock(rawContent));
+    return normalizeQuestionsPayload(parsed.questions, requestedType);
+}
+
+function parseDiscursiveCorrectionsResponse(rawContent) {
+    const parsed = JSON.parse(extractJsonBlock(rawContent));
+    const evaluations = Array.isArray(parsed.avaliacoes) ? parsed.avaliacoes : [];
+
+    if (!evaluations.length) {
+        throw new Error("A IA não retornou avaliações discursivas válidas.");
+    }
+
+    const corrections = {};
+    evaluations.forEach((evaluation) => {
+        const index = Number(evaluation.indice);
+        if (Number.isNaN(index)) {
+            return;
+        }
+
+        corrections[index] = {
+            nota: Number(evaluation.nota),
+            avaliacao: String(evaluation.avaliacao || "").trim(),
+            pontos_fortes: Array.isArray(evaluation.pontos_fortes) ? evaluation.pontos_fortes.map(String) : [],
+            lacunas: Array.isArray(evaluation.lacunas) ? evaluation.lacunas.map(String) : [],
+            sugestao_melhoria: String(evaluation.sugestao_melhoria || "").trim(),
+            resposta_esperada_resumida: String(evaluation.resposta_esperada_resumida || "").trim()
+        };
+    });
+
+    if (!Object.keys(corrections).length) {
+        throw new Error("A IA respondeu, mas sem correções discursivas utilizáveis.");
+    }
+
+    return corrections;
+}
+
+// --- AI GENERATION ---
+async function handleAIGeneration() {
+    const text = aiContext.value.trim();
+    const theme = aiTheme.value.trim();
+    const requestedType = aiQType.value;
+    const questionCount = parseInt(aiQAmount.value, 10) || 5;
+    const errorEl = document.getElementById("ai-error");
+    const loadingEl = document.getElementById("ai-loading");
+
+    if (!text) {
+        errorEl.textContent = "Por favor, insira um texto base.";
+        errorEl.classList.remove("hidden");
+        return;
+    }
+
+    errorEl.classList.add("hidden");
+    loadingEl.classList.remove("hidden");
+
+    try {
+        const payload = buildQuestionGenerationPayload({
+            theme: theme || "Conteúdo do material colado",
+            content: text,
+            questionCount,
+            questionType: requestedType,
+            outputFormat: "json",
+            sourceMode: "ia_nativa_do_site"
+        });
+
+        const rawContent = await requestStudyBuddyAI({
+            systemPrompt: "Você é a Study Buddy AI. Gere quizzes em JSON válido, sem markdown e sem texto extra.",
+            userPayload: payload,
+            temperature: 0.35
+        });
+
+        const questions = parseAIQuestionsResponse(rawContent, requestedType);
+        loadQuestionsIntoState(questions);
+    } catch (error) {
+        errorEl.textContent = `Erro na IA: ${error.message}`;
+        errorEl.classList.remove("hidden");
+    } finally {
+        loadingEl.classList.add("hidden");
+    }
+}
 
 // --- QUIZ LOGIC ---
 function startQuiz() {
-    if (state.questions.length === 0) return;
+    if (state.questions.length === 0) {
+        return;
+    }
 
-    // Clone questions so we don't mess up the original CSV order if user restarts
     state.activeQuestions = JSON.parse(JSON.stringify(state.questions));
-
-    // Always shuffle questions globally
     state.activeQuestions = shuffleArray(state.activeQuestions);
+    state.discursiveCorrections = {};
+    setCorrectionStatus("");
 
-    // If options shuffle is enabled, we shuffle the choices inside the state directly and update the correct answer reference
     if (state.settings.shuffleOptions) {
-        state.activeQuestions.forEach(q => {
-            let opts = [
-                { key: 'A', text: q.opcao_a },
-                { key: 'B', text: q.opcao_b },
-                { key: 'C', text: q.opcao_c },
-                { key: 'D', text: q.opcao_d }
-            ];
-            
-            opts = shuffleArray(opts);
-            const correctOpt = opts.find(o => o.key === q.resposta_correta);
-            
-            q.opcao_a = opts[0].text;
-            q.opcao_b = opts[1].text;
-            q.opcao_c = opts[2].text;
-            q.opcao_d = opts[3].text;
-            
-            if (opts[0] === correctOpt) q.resposta_correta = 'A';
-            else if (opts[1] === correctOpt) q.resposta_correta = 'B';
-            else if (opts[2] === correctOpt) q.resposta_correta = 'C';
-            else if (opts[3] === correctOpt) q.resposta_correta = 'D';
+        state.activeQuestions.forEach((question) => {
+            if (question.tipo === "discursiva" || question.tipo === "vf") {
+                return;
+            }
+
+            let options = getOptionsForQuestion(question);
+            if (options.length < 2) {
+                return;
+            }
+
+            options = shuffleArray(options);
+            const correctOption = options.find((option) => option.key === question.resposta_correta);
+
+            OPTION_KEYS.forEach((key, index) => {
+                question[`opcao_${key.toLowerCase()}`] = options[index] ? options[index].text : "";
+            });
+
+            if (correctOption) {
+                question.resposta_correta = OPTION_KEYS[options.indexOf(correctOption)];
+            }
         });
     }
 
-    // Reset state
     state.currentQIndex = 0;
     state.userAnswers = new Array(state.activeQuestions.length).fill(null);
 
-    // Setup UI Based on Mode
-    if (state.settings.mode === 'single') {
-        quizSingleContainer.classList.remove('hidden');
-        quizAllContainer.classList.add('hidden');
-        document.querySelector('.quiz-header').classList.remove('hidden');
+    if (state.settings.mode === "single") {
+        quizSingleContainer.classList.remove("hidden");
+        quizAllContainer.classList.add("hidden");
+        document.querySelector(".quiz-header").classList.remove("hidden");
         qTotalEl.textContent = state.activeQuestions.length;
         renderSingleQuestion(0);
     } else {
-        quizSingleContainer.classList.add('hidden');
-        quizAllContainer.classList.remove('hidden');
-        document.querySelector('.quiz-header').classList.add('hidden');
+        quizSingleContainer.classList.add("hidden");
+        quizAllContainer.classList.remove("hidden");
+        document.querySelector(".quiz-header").classList.add("hidden");
         renderAllQuestions();
     }
 
-    showScreen('quiz');
+    showScreen("quiz");
 }
 
-function getOptionsForQuestion(qInfo) {
-    return [
-        { key: 'A', text: qInfo.opcao_a },
-        { key: 'B', text: qInfo.opcao_b },
-        { key: 'C', text: qInfo.opcao_c },
-        { key: 'D', text: qInfo.opcao_d }
-    ];
+function getOptionsForQuestion(question) {
+    return getOptionKeysForQuestion(question).map((key) => ({
+        key,
+        text: question[`opcao_${key.toLowerCase()}`]
+    }));
 }
 
-// Badge Helper
-function createBadgeHTML(nivelStr) {
-    if (!nivelStr) return '';
-    const nivel = nivelStr.trim();
-    const lower = nivel.toLowerCase();
-    let badgeClass = 'badge-nivel ';
-    if (lower.includes('fácil') || lower.includes('facil')) badgeClass += 'badge-facil';
-    else if (lower.includes('difícil') || lower.includes('dificil')) badgeClass += 'badge-dificil';
-    else badgeClass += 'badge-medio';
-    return `<span class="${badgeClass}">${nivel}</span>`;
+function getQuestionTypeBadge(questionType) {
+    if (questionType === "discursiva") {
+        return '<span class="badge-tipo badge-discursiva">Discursiva</span>';
+    }
+    if (questionType === "vf") {
+        return '<span class="badge-tipo badge-vf">V/F</span>';
+    }
+    return '<span class="badge-tipo badge-objetiva">Objetiva</span>';
 }
 
-// SINGLGE MODE
+function createBadgeHTML(levelText) {
+    if (!levelText) {
+        return "";
+    }
+
+    const level = levelText.trim();
+    const lowerLevel = level.toLowerCase();
+    let badgeClass = "badge-nivel ";
+
+    if (lowerLevel.includes("fácil") || lowerLevel.includes("facil")) {
+        badgeClass += "badge-facil";
+    } else if (lowerLevel.includes("difícil") || lowerLevel.includes("dificil")) {
+        badgeClass += "badge-dificil";
+    } else {
+        badgeClass += "badge-medio";
+    }
+
+    return `<span class="${badgeClass}">${escapeHtml(level)}</span>`;
+}
+
 function renderSingleQuestion(index) {
-    const qInfo = state.activeQuestions[index];
+    const question = state.activeQuestions[index];
     qCurrentEl.textContent = index + 1;
     progressFill.style.width = `${((index + 1) / state.activeQuestions.length) * 100}%`;
 
-    const badgeContainer = document.getElementById('single-badge-container');
+    const badgeContainer = document.getElementById("single-badge-container");
     if (badgeContainer) {
-        badgeContainer.innerHTML = createBadgeHTML(qInfo.nivel);
+        badgeContainer.innerHTML = `${createBadgeHTML(question.nivel)}${getQuestionTypeBadge(question.tipo)}`;
     }
 
-    questionTextEl.textContent = qInfo.pergunta;
-    optionsContainer.innerHTML = '';
-    explanationContainer.classList.add('hidden');
+    questionTextEl.textContent = question.pergunta;
+    optionsContainer.innerHTML = "";
+    explanationContainer.classList.add("hidden");
 
-    if (qInfo.tipo === 'discursiva') {
-        const textarea = document.createElement('textarea');
-        textarea.className = 'discursive-answer full-width';
+    if (question.tipo === "discursiva") {
+        const textarea = document.createElement("textarea");
+        textarea.className = "discursive-answer full-width";
         textarea.placeholder = "Digite sua resposta detalhada aqui...";
         textarea.rows = 5;
-        if (state.userAnswers[index] !== null) {
+
+        if (typeof state.userAnswers[index] === "string") {
             textarea.value = state.userAnswers[index];
         }
-        
-        textarea.addEventListener('input', (e) => {
-            state.userAnswers[index] = e.target.value;
+
+        textarea.addEventListener("input", (event) => {
+            state.userAnswers[index] = event.target.value;
         });
 
         optionsContainer.appendChild(textarea);
     } else {
-        const opts = getOptionsForQuestion(qInfo);
+        const options = getOptionsForQuestion(question);
 
-        opts.forEach(opt => {
-            const btn = document.createElement('button');
-            btn.className = 'option-btn';
-            btn.innerHTML = `<span style="font-weight:bold; margin-right:8px;">${opt.key}.</span> ${opt.text}`;
+        options.forEach((option) => {
+            const button = document.createElement("button");
+            button.className = "option-btn";
+            button.innerHTML = `<span class="option-key">${option.key}.</span> ${escapeHtml(option.text)}`;
 
-            const hasAnswered = state.userAnswers[index] !== null;
+            const hasAnsweredQuestion = hasAnswer(state.userAnswers[index]);
 
-            // Re-apply states if previously answered
-            if (hasAnswered) {
+            if (hasAnsweredQuestion) {
                 if (state.settings.immediateFeedback) {
-                    btn.disabled = true;
+                    button.disabled = true;
                 }
-                if (opt.key === state.userAnswers[index]) {
-                    btn.classList.add('selected');
+
+                if (option.key === state.userAnswers[index]) {
+                    button.classList.add("selected");
                     if (state.settings.immediateFeedback) {
-                        btn.classList.add(opt.key === qInfo.resposta_correta ? 'correct' : 'incorrect');
+                        button.classList.add(option.key === question.resposta_correta ? "correct" : "incorrect");
                     }
                 }
-                if (state.settings.immediateFeedback && opt.key === qInfo.resposta_correta) {
-                    btn.classList.add('correct');
+
+                if (state.settings.immediateFeedback && option.key === question.resposta_correta) {
+                    button.classList.add("correct");
                 }
             }
 
-            // Se ainda não respondeu OU se não for feedback imediato (pode editar)
-            if (!hasAnswered || !state.settings.immediateFeedback) {
-                btn.addEventListener('click', function () { handleOptionSelect(index, opt.key, this); });
+            if (!hasAnsweredQuestion || !state.settings.immediateFeedback) {
+                button.addEventListener("click", function () {
+                    handleOptionSelect(index, option.key, this);
+                });
             }
 
-            optionsContainer.appendChild(btn);
+            optionsContainer.appendChild(button);
         });
 
-        if (state.settings.immediateFeedback && state.userAnswers[index] !== null && qInfo.explicacao) {
-            explanationText.textContent = qInfo.explicacao;
-            explanationContainer.classList.remove('hidden');
+        if (state.settings.immediateFeedback && hasAnswer(state.userAnswers[index]) && question.explicacao) {
+            explanationText.textContent = question.explicacao;
+            explanationContainer.classList.remove("hidden");
         }
     }
 
-    // Buttons logic
-    btnPrevQ.className = `btn btn-outline ${(!state.settings.allowBack || index === 0) ? 'hidden' : ''}`;
+    btnPrevQ.className = `btn btn-outline ${(!state.settings.allowBack || index === 0) ? "hidden" : ""}`;
 
     if (index === state.activeQuestions.length - 1) {
-        btnNextQ.classList.add('hidden');
-        btnFinishQ.classList.remove('hidden');
+        btnNextQ.classList.add("hidden");
+        btnFinishQ.classList.remove("hidden");
     } else {
-        btnNextQ.classList.remove('hidden');
-        btnFinishQ.classList.add('hidden');
+        btnNextQ.classList.remove("hidden");
+        btnFinishQ.classList.add("hidden");
     }
 }
 
-function handleOptionSelect(qIndex, selectedKey, btnElement) {
-    if (state.settings.immediateFeedback && state.userAnswers[qIndex] !== null) return; // Prevent multi-click in immediate
-    state.userAnswers[qIndex] = selectedKey;
+function handleOptionSelect(questionIndex, selectedKey, buttonElement) {
+    if (state.settings.immediateFeedback && hasAnswer(state.userAnswers[questionIndex])) {
+        return;
+    }
+
+    state.userAnswers[questionIndex] = selectedKey;
 
     if (!state.settings.immediateFeedback) {
-        // Visually update current view before re-rendering
-        Array.from(optionsContainer.children).forEach(b => b.classList.remove('selected'));
-        btnElement.classList.add('selected', 'clicked-pulse');
+        Array.from(optionsContainer.children).forEach((button) => button.classList.remove("selected"));
+        buttonElement.classList.add("selected", "clicked-pulse");
 
-        // Auto-advance after animation if not the last question
         setTimeout(() => {
-            if (state.currentQIndex === qIndex && state.currentQIndex < state.activeQuestions.length - 1) {
+            if (state.currentQIndex === questionIndex && state.currentQIndex < state.activeQuestions.length - 1) {
                 changeQuestion(1);
             } else {
-                renderSingleQuestion(qIndex);
+                renderSingleQuestion(questionIndex);
             }
         }, 400);
-    } else {
-        renderSingleQuestion(qIndex); // Re-render to show states instantly (immediate mode)
+
+        return;
     }
+
+    renderSingleQuestion(questionIndex);
 }
 
-function changeQuestion(dir) {
-    let newIndex = state.currentQIndex + dir;
+function changeQuestion(direction) {
+    const newIndex = state.currentQIndex + direction;
     if (newIndex >= 0 && newIndex < state.activeQuestions.length) {
         state.currentQIndex = newIndex;
         renderSingleQuestion(state.currentQIndex);
     }
 }
 
-// ALL MODE
 function renderAllQuestions() {
-    allQuestionsList.innerHTML = '';
-    state.activeQuestions.forEach((qInfo, index) => {
-        const qBlock = document.createElement('div');
-        qBlock.className = 'question-container';
-        qBlock.style.borderBottom = '1px solid #eee';
-        qBlock.style.paddingBottom = '20px';
+    allQuestionsList.innerHTML = "";
 
-        const title = document.createElement('h3');
-        title.innerHTML = `${createBadgeHTML(qInfo.nivel)}<br>${index + 1}. ${qInfo.pergunta}`;
-        qBlock.appendChild(title);
+    state.activeQuestions.forEach((question, index) => {
+        const questionBlock = document.createElement("div");
+        questionBlock.className = "question-container question-block";
 
-        const optsContainer = document.createElement('div');
-        optsContainer.className = 'options-container';
+        const title = document.createElement("h3");
+        title.innerHTML = `${createBadgeHTML(question.nivel)}${getQuestionTypeBadge(question.tipo)}<br>${index + 1}. ${escapeHtml(question.pergunta)}`;
+        questionBlock.appendChild(title);
 
-        if (qInfo.tipo === 'discursiva') {
-            const textarea = document.createElement('textarea');
-            textarea.className = 'discursive-answer full-width';
+        const optionsBlock = document.createElement("div");
+        optionsBlock.className = "options-container";
+
+        if (question.tipo === "discursiva") {
+            const textarea = document.createElement("textarea");
+            textarea.className = "discursive-answer full-width";
             textarea.placeholder = "Digite sua resposta detalhada aqui...";
             textarea.rows = 4;
-            if (state.userAnswers[index] !== null) {
+
+            if (typeof state.userAnswers[index] === "string") {
                 textarea.value = state.userAnswers[index];
             }
-            
-            textarea.addEventListener('input', (e) => {
-                state.userAnswers[index] = e.target.value;
+
+            textarea.addEventListener("input", (event) => {
+                state.userAnswers[index] = event.target.value;
             });
-            
-            optsContainer.appendChild(textarea);
+
+            optionsBlock.appendChild(textarea);
         } else {
-            const opts = getOptionsForQuestion(qInfo);
+            const options = getOptionsForQuestion(question);
 
-            opts.forEach(opt => {
-                const btn = document.createElement('button');
-                btn.className = 'option-btn';
-                btn.innerHTML = `<span style="font-weight:bold; margin-right:8px;">${opt.key}.</span> ${opt.text}`;
+            options.forEach((option) => {
+                const button = document.createElement("button");
+                button.className = "option-btn";
+                button.innerHTML = `<span class="option-key">${option.key}.</span> ${escapeHtml(option.text)}`;
 
-                btn.addEventListener('click', () => {
-                    state.userAnswers[index] = opt.key;
-                    // visually mark Selection
-                    Array.from(optsContainer.children).forEach(c => c.classList.remove('selected'));
-                    btn.classList.add('selected');
+                const selectedAnswer = state.userAnswers[index];
+                const hasAnsweredQuestion = hasAnswer(selectedAnswer);
 
-                    if (state.settings.immediateFeedback) {
-                        Array.from(optsContainer.children).forEach(c => c.disabled = true);
-                        if (opt.key === qInfo.resposta_correta) btn.classList.add('correct');
-                        else btn.classList.add('incorrect');
+                if (hasAnsweredQuestion && option.key === selectedAnswer) {
+                    button.classList.add("selected");
+                }
 
-                        // highlight correct anyway
-                        const correctBtnIndex = opts.findIndex(o => o.key === qInfo.resposta_correta);
-                        if (correctBtnIndex !== -1) optsContainer.children[correctBtnIndex].classList.add('correct');
+                if (state.settings.immediateFeedback && hasAnsweredQuestion) {
+                    button.disabled = true;
 
-                        if (qInfo.explicacao) {
-                            const exp = document.createElement('div');
-                            exp.className = 'explanation-box';
-                            exp.innerHTML = `<h4>Explicação:</h4><p>${qInfo.explicacao}</p>`;
-                            qBlock.appendChild(exp);
-                        }
+                    if (option.key === question.resposta_correta) {
+                        button.classList.add("correct");
+                    } else if (option.key === selectedAnswer) {
+                        button.classList.add("incorrect");
                     }
-                });
-                optsContainer.appendChild(btn);
+                }
+
+                if (!state.settings.immediateFeedback || !hasAnsweredQuestion) {
+                    button.addEventListener("click", () => {
+                        state.userAnswers[index] = option.key;
+
+                        if (state.settings.immediateFeedback) {
+                            renderAllQuestions();
+                        } else {
+                            Array.from(optionsBlock.children).forEach((child) => child.classList.remove("selected"));
+                            button.classList.add("selected");
+                        }
+                    });
+                }
+
+                optionsBlock.appendChild(button);
             });
         }
 
-        qBlock.appendChild(optsContainer);
-        allQuestionsList.appendChild(qBlock);
+        questionBlock.appendChild(optionsBlock);
+
+        if (question.tipo !== "discursiva" && state.settings.immediateFeedback && hasAnswer(state.userAnswers[index]) && question.explicacao) {
+            const explanation = document.createElement("div");
+            explanation.className = "explanation-box";
+            explanation.innerHTML = `<h4>Explicação:</h4><p>${escapeHtml(question.explicacao)}</p>`;
+            questionBlock.appendChild(explanation);
+        }
+
+        allQuestionsList.appendChild(questionBlock);
     });
 }
 
-
 // --- RESULTS ---
 function finishQuiz() {
-    // Check if user answered everything (optional warning, but we allow submission)
-    const answeredCount = state.userAnswers.filter(a => a !== null).length;
+    const answeredCount = state.userAnswers.filter((answer) => hasAnswer(answer)).length;
+
     if (answeredCount < state.activeQuestions.length) {
-        if (!confirm('Você não respondeu todas as perguntas. Deseja finalizar assim mesmo?')) return;
+        const confirmed = window.confirm("Você não respondeu todas as perguntas. Deseja finalizar assim mesmo?");
+        if (!confirmed) {
+            return;
+        }
     }
 
     calculateResults();
-    showScreen('result');
+    showScreen("result");
+}
+
+function createCorrectionElement(correction) {
+    const correctionBox = document.createElement("div");
+    correctionBox.className = "ai-correction-box";
+
+    const title = document.createElement("h5");
+    title.textContent = `Correção da Study Buddy AI — Nota ${Number.isFinite(correction.nota) ? correction.nota.toFixed(1) : "-"} / 10`;
+    correctionBox.appendChild(title);
+
+    if (correction.avaliacao) {
+        const summary = document.createElement("p");
+        summary.className = "ai-correction-summary";
+        summary.textContent = correction.avaliacao;
+        correctionBox.appendChild(summary);
+    }
+
+    if (correction.pontos_fortes.length) {
+        const strengthsTitle = document.createElement("p");
+        strengthsTitle.className = "ai-correction-label";
+        strengthsTitle.textContent = "Pontos fortes:";
+        correctionBox.appendChild(strengthsTitle);
+
+        const strengthsList = document.createElement("ul");
+        strengthsList.className = "ai-correction-list";
+        correction.pontos_fortes.forEach((item) => {
+            const listItem = document.createElement("li");
+            listItem.textContent = item;
+            strengthsList.appendChild(listItem);
+        });
+        correctionBox.appendChild(strengthsList);
+    }
+
+    if (correction.lacunas.length) {
+        const gapsTitle = document.createElement("p");
+        gapsTitle.className = "ai-correction-label";
+        gapsTitle.textContent = "Lacunas:";
+        correctionBox.appendChild(gapsTitle);
+
+        const gapsList = document.createElement("ul");
+        gapsList.className = "ai-correction-list";
+        correction.lacunas.forEach((item) => {
+            const listItem = document.createElement("li");
+            listItem.textContent = item;
+            gapsList.appendChild(listItem);
+        });
+        correctionBox.appendChild(gapsList);
+    }
+
+    if (correction.sugestao_melhoria) {
+        const improvement = document.createElement("p");
+        improvement.className = "ai-correction-tip";
+        improvement.textContent = `Como melhorar: ${correction.sugestao_melhoria}`;
+        correctionBox.appendChild(improvement);
+    }
+
+    if (correction.resposta_esperada_resumida) {
+        const expected = document.createElement("p");
+        expected.className = "ai-correction-expected";
+        expected.textContent = `Resposta esperada em alto nível: ${correction.resposta_esperada_resumida}`;
+        correctionBox.appendChild(expected);
+    }
+
+    return correctionBox;
 }
 
 function calculateResults() {
@@ -868,90 +1363,129 @@ function calculateResults() {
     let totalObjectives = 0;
     let hasDiscursive = false;
 
-    const reviewList = document.getElementById('review-list');
-    reviewList.innerHTML = '';
+    const reviewList = document.getElementById("review-list");
+    const scoreSummary = document.querySelector(".score-summary");
+    reviewList.innerHTML = "";
 
-    state.activeQuestions.forEach((q, i) => {
-        const uAns = state.userAnswers[i];
-        
-        // Review Card
-        const item = document.createElement('div');
-        item.className = 'review-item';
-        
-        let customBlock = "";
+    state.activeQuestions.forEach((question, index) => {
+        const userAnswer = state.userAnswers[index];
+        const item = document.createElement("div");
+        item.className = "review-item";
 
-        if (q.tipo === 'discursiva') {
+        const title = document.createElement("h4");
+        title.textContent = `${index + 1}. ${question.pergunta}`;
+        item.appendChild(title);
+
+        const typeTag = document.createElement("div");
+        typeTag.className = "review-meta";
+        typeTag.innerHTML = `${createBadgeHTML(question.nivel)}${getQuestionTypeBadge(question.tipo)}`;
+        item.appendChild(typeTag);
+
+        if (question.tipo === "discursiva") {
             hasDiscursive = true;
-            const userText = uAns ? uAns : "<i>Não respondeu</i>";
-            customBlock = `
-                <p>Sua resposta: <div class="discursive-review">${userText}</div></p>
-                <p><span class="status pendent">Aguardando Avaliação</span></p>
-            `;
-        } else {
-            totalObjectives++;
-            const isCorrect = uAns === q.resposta_correta;
-            if (isCorrect) correct++;
 
-            let ansText = "Não respondeu";
-            let ansClass = "errou";
-            if (uAns) {
-                const answerContent = q['opcao_' + uAns.toLowerCase()];
-                ansText = `Opção ${uAns} - ${answerContent}`;
-                ansClass = isCorrect ? "acertou" : "errou";
+            const answerLabel = document.createElement("p");
+            answerLabel.textContent = "Sua resposta:";
+            item.appendChild(answerLabel);
+
+            const answerBox = document.createElement("div");
+            answerBox.className = "discursive-review";
+            answerBox.textContent = hasAnswer(userAnswer) ? userAnswer : "Não respondeu";
+            item.appendChild(answerBox);
+
+            if (state.discursiveCorrections[index]) {
+                item.appendChild(createCorrectionElement(state.discursiveCorrections[index]));
+            } else {
+                const statusLine = document.createElement("p");
+                statusLine.innerHTML = '<span class="status pendent">Aguardando avaliação</span>';
+                item.appendChild(statusLine);
+            }
+        } else {
+            totalObjectives += 1;
+            const isCorrect = userAnswer === question.resposta_correta;
+            if (isCorrect) {
+                correct += 1;
             }
 
-            const correctContent = q['opcao_' + q.resposta_correta.toLowerCase()];
+            const answerText = document.createElement("p");
+            const answerStatus = document.createElement("span");
+            answerStatus.className = `status ${isCorrect ? "acertou" : "errou"}`;
 
-            customBlock = `
-                <p>Sua resposta: <span class="status ${ansClass}">${ansText}</span></p>
-                ${!isCorrect ? `<p>Resposta correta: <span class="status acertou">Opção ${q.resposta_correta} - ${correctContent}</span></p>` : ''}
-            `;
+            if (hasAnswer(userAnswer)) {
+                const answerContent = question[`opcao_${String(userAnswer).toLowerCase()}`];
+                answerStatus.textContent = `Opção ${userAnswer} - ${answerContent}`;
+            } else {
+                answerStatus.textContent = "Não respondeu";
+            }
+
+            answerText.textContent = "Sua resposta: ";
+            answerText.appendChild(answerStatus);
+            item.appendChild(answerText);
+
+            if (!isCorrect) {
+                const correctText = document.createElement("p");
+                const correctStatus = document.createElement("span");
+                correctStatus.className = "status acertou";
+                correctStatus.textContent = `Opção ${question.resposta_correta} - ${question[`opcao_${question.resposta_correta.toLowerCase()}`]}`;
+                correctText.textContent = "Resposta correta: ";
+                correctText.appendChild(correctStatus);
+                item.appendChild(correctText);
+            }
         }
 
-        item.innerHTML = `
-            <h4>${i + 1}. ${q.pergunta}</h4>
-            ${customBlock}
-            ${q.explicacao ? `<p class="exp">Explicação: ${q.explicacao}</p>` : ''}
-        `;
+        if (question.explicacao) {
+            const explanation = document.createElement("p");
+            explanation.className = "exp";
+            explanation.textContent = `Explicação: ${question.explicacao}`;
+            item.appendChild(explanation);
+        }
+
         reviewList.appendChild(item);
     });
 
-    const isOnlyDiscursive = totalObjectives === 0;
-
-    if (isOnlyDiscursive) {
-        document.querySelector('.score-summary').classList.add('hidden');
+    if (totalObjectives === 0) {
+        scoreSummary.classList.add("hidden");
     } else {
-        document.querySelector('.score-summary').classList.remove('hidden');
+        scoreSummary.classList.remove("hidden");
+
         const incorrect = totalObjectives - correct;
         const percent = Math.round((correct / totalObjectives) * 100);
 
-        document.getElementById('res-total').textContent = totalObjectives;
-        document.getElementById('res-correct').textContent = correct;
-        document.getElementById('res-incorrect').textContent = incorrect;
-        document.getElementById('res-percent').textContent = `${percent}%`;
+        document.getElementById("res-total").textContent = totalObjectives;
+        document.getElementById("res-correct").textContent = correct;
+        document.getElementById("res-incorrect").textContent = incorrect;
+        document.getElementById("res-percent").textContent = `${percent}%`;
     }
 
     if (hasDiscursive) {
-        btnEvalDiscursive.classList.remove('hidden');
+        btnEvalDiscursive.classList.remove("hidden");
+        btnCorrectDiscursiveAi.classList.remove("hidden");
     } else {
-        btnEvalDiscursive.classList.add('hidden');
+        btnEvalDiscursive.classList.add("hidden");
+        btnCorrectDiscursiveAi.classList.add("hidden");
+        setCorrectionStatus("");
     }
 }
 
 function generateEvaluationPrompt() {
-    const questoes = [];
-    state.activeQuestions.forEach((q, i) => {
-        if (q.tipo === 'discursiva') {
-            questoes.push({
-                numero: i + 1,
-                pergunta: q.pergunta,
-                criterios_de_correcao: q.explicacao || null,
-                resposta_do_aluno: state.userAnswers[i] || "Não respondeu"
+    const questions = [];
+
+    state.activeQuestions.forEach((question, index) => {
+        if (question.tipo === "discursiva") {
+            questions.push({
+                numero: index + 1,
+                pergunta: question.pergunta,
+                criterios_de_correcao: question.explicacao || null,
+                resposta_do_aluno: hasAnswer(state.userAnswers[index]) ? state.userAnswers[index] : "Não respondeu"
             });
         }
     });
 
-    const promptObj = {
+    if (questions.length === 0) {
+        return;
+    }
+
+    const promptObject = {
         persona: "professor rigoroso e avaliador pedagógico especialista na disciplina",
         tarefa: "avaliar_respostas_discursivas",
         instrucoes: [
@@ -961,26 +1495,99 @@ function generateEvaluationPrompt() {
             "Usar linguagem direta, construtiva e pedagogicamente fundamentada."
         ],
         formato_de_saida: "Para cada questão: número, nota (0-10), avaliação detalhada e sugestão de melhoria.",
-        questoes
+        questoes: questions
     };
 
-    const promptStr = JSON.stringify(promptObj, null, 2);
+    const promptString = JSON.stringify(promptObject, null, 2);
 
     if (navigator.clipboard && window.isSecureContext) {
-        navigator.clipboard.writeText(promptStr).then(() => {
-            const origin = btnEvalDiscursive.innerHTML;
+        navigator.clipboard.writeText(promptString).then(() => {
+            const original = btnEvalDiscursive.innerHTML;
             btnEvalDiscursive.innerHTML = "✅ Copiado!";
-            setTimeout(() => { btnEvalDiscursive.innerHTML = origin; }, 2000);
+
+            setTimeout(() => {
+                btnEvalDiscursive.innerHTML = original;
+            }, 2000);
         });
-    } else {
-        alert("Não foi possível copiar. Seu navegador não suporta clipboard automático sem contexto seguro.");
+
+        return;
     }
-}
-function redoQuiz() {
-    // Limpa respostas e volta pro config
-    state.userAnswers = [];
-    showScreen('config');
+
+    alert("Não foi possível copiar. Seu navegador não suporta clipboard automático sem contexto seguro.");
 }
 
-// Boot up
-document.addEventListener('DOMContentLoaded', init);
+async function correctDiscursiveAnswersWithAI() {
+    const discursiveQuestions = [];
+
+    state.activeQuestions.forEach((question, index) => {
+        if (question.tipo === "discursiva") {
+            discursiveQuestions.push({
+                indice: index,
+                numero: index + 1,
+                pergunta: question.pergunta,
+                criterios_de_correcao: question.explicacao || "",
+                resposta_do_aluno: hasAnswer(state.userAnswers[index]) ? state.userAnswers[index] : "Não respondeu"
+            });
+        }
+    });
+
+    if (!discursiveQuestions.length) {
+        return;
+    }
+
+    btnCorrectDiscursiveAi.disabled = true;
+    btnCorrectDiscursiveAi.textContent = "Corrigindo...";
+    setCorrectionStatus("A Study Buddy AI está corrigindo as respostas discursivas...", "loading");
+
+    try {
+        const rawContent = await requestStudyBuddyAI({
+            systemPrompt: "Você é a Study Buddy AI. Avalie respostas discursivas com rigor pedagógico e retorne apenas JSON válido.",
+            userPayload: {
+                tarefa: "corrigir_respostas_discursivas",
+                persona: "avaliador rigoroso, justo e pedagógico",
+                instrucoes: [
+                    "Avaliar cada resposta com base apenas na pergunta, nos critérios de correção e na resposta do aluno.",
+                    "Atribuir nota de 0 a 10.",
+                    "Identificar pontos fortes, lacunas e sugerir uma melhoria objetiva.",
+                    "Retornar exclusivamente JSON no formato solicitado."
+                ],
+                formato_saida: {
+                    avaliacoes: [
+                        {
+                            indice: "number",
+                            nota: "number",
+                            avaliacao: "string",
+                            pontos_fortes: ["string"],
+                            lacunas: ["string"],
+                            sugestao_melhoria: "string",
+                            resposta_esperada_resumida: "string"
+                        }
+                    ]
+                },
+                questoes: discursiveQuestions
+            },
+            temperature: 0.2
+        });
+
+        state.discursiveCorrections = parseDiscursiveCorrectionsResponse(rawContent);
+        calculateResults();
+        setCorrectionStatus("Correção concluída pela Study Buddy AI.", "success");
+        btnCorrectDiscursiveAi.textContent = "Reavaliar com a Study Buddy AI";
+    } catch (error) {
+        setCorrectionStatus(`Erro na correção: ${error.message}`, "error");
+        btnCorrectDiscursiveAi.textContent = "Corrigir com a Study Buddy AI";
+    } finally {
+        btnCorrectDiscursiveAi.disabled = false;
+    }
+}
+
+function redoQuiz() {
+    state.userAnswers = [];
+    state.currentQIndex = 0;
+    state.discursiveCorrections = {};
+    setCorrectionStatus("");
+    btnCorrectDiscursiveAi.textContent = "Corrigir com a Study Buddy AI";
+    showScreen("config");
+}
+
+document.addEventListener("DOMContentLoaded", init);
