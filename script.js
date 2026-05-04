@@ -37,6 +37,7 @@ const promptTheme = document.getElementById("prompt-theme");
 const promptCsvAmount = document.getElementById("prompt-csv-amount");
 const promptQType = document.getElementById("prompt-q-type");
 const promptContent = document.getElementById("prompt-content");
+const promptIncludeMath = document.getElementById("prompt-include-math");
 const btnGeneratePrompt = document.getElementById("btn-generate-prompt");
 const promptResultContainer = document.getElementById("prompt-result-container");
 const promptResult = document.getElementById("prompt-result");
@@ -53,6 +54,7 @@ const aiTheme = document.getElementById("ai-theme");
 const aiContext = document.getElementById("ai-context");
 const aiQAmount = document.getElementById("ai-q-amount");
 const aiQType = document.getElementById("ai-q-type");
+const aiIncludeMath = document.getElementById("ai-include-math");
 const btnGotoAi = document.getElementById("btn-goto-ai");
 const btnGenerateAi = document.getElementById("btn-generate-ai");
 
@@ -128,6 +130,11 @@ function attachListeners() {
             generateCSVPrompt();
         }
     });
+    promptIncludeMath.addEventListener("change", () => {
+        if (!promptResultContainer.classList.contains("hidden")) {
+            generateCSVPrompt();
+        }
+    });
 
     btnCopyPrompt.addEventListener("click", copyCSVPrompt);
     btnGoCsvImport.addEventListener("click", () => showScreen("csv-import"));
@@ -187,6 +194,94 @@ function escapeHtml(value) {
         .replace(/>/g, "&gt;")
         .replace(/"/g, "&quot;")
         .replace(/'/g, "&#39;");
+}
+
+function renderMathInElement(element) {
+    if (!element || !window.MathJax) {
+        return;
+    }
+
+    const typeset = () => {
+        if (typeof window.MathJax.typesetPromise !== "function") {
+            return;
+        }
+
+        window.MathJax.typesetPromise([element]).catch((error) => {
+            console.error("Erro ao renderizar LaTeX.", error);
+        });
+    };
+
+    if (window.MathJax.startup?.promise) {
+        window.MathJax.startup.promise.then(typeset).catch((error) => {
+            console.error("Erro ao inicializar MathJax.", error);
+        });
+        return;
+    }
+
+    typeset();
+}
+
+function normalizeMathText(value) {
+    let text = String(value || "");
+    const latexCommandPattern = "\\\\(?:pi|left|right|frac|sqrt|mathbb|mathcal|mathrm|begin|end|sum|int|lim|log|ln|sin|cos|tan|vec|overline|underline|cdot|times|pm|leq|geq|neq|infty|alpha|beta|gamma|theta|lambda|mu|sigma|Delta)";
+
+    text = text.replace(/\\{2,}(?=[()[\]a-zA-Z])/g, "\\");
+
+    text = text.replace(/(^|\n)\s*\[\s*\n([\s\S]*?)\n\s*\]\s*(?=\n|$)/g, (match, prefix, formula) => {
+        if (!new RegExp(latexCommandPattern).test(formula)) {
+            return match;
+        }
+
+        return `${prefix}\\[\n${formula.trim()}\n\\]`;
+    });
+
+    text = text.replace(/\((\\(?:mathbb|mathcal|mathrm|frac|sqrt|vec|overline|underline|begin|sum|int|lim|log|ln|sin|cos|tan|left)[^)]*)\)/g, "\\($1\\)");
+
+    const protectedMath = [];
+    text = text.replace(/\\\[[\s\S]*?\\\]|\$\$[\s\S]*?\$\$/g, (match) => {
+        const token = `@@MATH_${protectedMath.length}@@`;
+        protectedMath.push(match);
+        return token;
+    });
+
+    text = text
+        .split("\n")
+        .map((line) => {
+            const trimmedLine = line.trim();
+            if (!trimmedLine || /\\\(|\\\[|\$\$|\$/.test(trimmedLine)) {
+                return line;
+            }
+
+            if (!new RegExp(latexCommandPattern).test(trimmedLine)) {
+                return line;
+            }
+
+            const shouldDisplayLine = /^\\(?:pi|begin)/.test(trimmedLine)
+                || /\\begin\{|\\left|\\right|\\\\/.test(trimmedLine)
+                || trimmedLine.length > 60;
+
+            return shouldDisplayLine ? `\\[${trimmedLine}\\]` : `\\(${trimmedLine}\\)`;
+        })
+        .join("\n");
+
+    text = text.replace(/@@MATH_(\d+)@@/g, (match, index) => protectedMath[Number(index)] || match);
+
+    return text.replace(/\n{3,}/g, "\n\n").trim();
+}
+
+function setMathText(element, value) {
+    element.classList.add("math-content");
+    element.textContent = normalizeMathText(value);
+    renderMathInElement(element);
+}
+
+function createMathTextElement(tagName, value, className = "") {
+    const element = document.createElement(tagName);
+    if (className) {
+        element.className = className;
+    }
+    setMathText(element, value);
+    return element;
 }
 
 function resetLoadedQuiz(questions) {
@@ -527,16 +622,21 @@ function getRulesByQuestionType(questionType) {
     };
 }
 
-function getOutputFormatConfig(outputFormat, questionCount) {
+function getOutputFormatConfig(outputFormat, questionCount, includeMath = false) {
     if (outputFormat === "csv") {
         return {
             tipo_saida: "csv",
-            instrucao: "Retornar exclusivamente um bloco CSV puro, sem crases, sem markdown, sem saudações e sem texto antes ou depois.",
+            instrucao: includeMath
+                ? "Retornar exclusivamente um bloco de codigo markdown ```csv contendo CSV puro, sem saudacoes e sem texto antes ou depois. O bloco de codigo e obrigatorio para impedir que o chat renderize LaTeX antes da copia."
+                : "Retornar exclusivamente um bloco CSV puro, sem crases, sem markdown, sem saudações e sem texto antes ou depois.",
             separador: ",",
             campos_com_virgula_ou_quebra_de_linha: "envolver em aspas duplas",
             cabecalho_obrigatorio: "pergunta,opcao_a,opcao_b,opcao_c,opcao_d,resposta_correta,explicacao,tema,nivel,tipo",
             quantidade_linhas_de_dados: questionCount,
-            valores_validos_coluna_tipo: ["objetiva", "discursiva", "vf"]
+            valores_validos_coluna_tipo: ["objetiva", "discursiva", "vf"],
+            preservacao_latex: includeMath
+                ? "Dentro do bloco ```csv, escrever LaTeX como texto fonte puro com barras invertidas reais. Nao permitir que o chat transforme formulas em visual/renderizacao."
+                : undefined
         };
     }
 
@@ -567,8 +667,36 @@ function getOutputFormatConfig(outputFormat, questionCount) {
     };
 }
 
-function buildQuestionGenerationPayload({ theme, content, questionCount, questionType, outputFormat, sourceMode }) {
+function getMathFormulaInstructions(outputFormat) {
     return {
+        habilitado: true,
+        quando_usar: "Usar formulas matematicas em LaTeX quando isso for pedagogicamente util para o tema.",
+        delimitadores: {
+            inline_para_expressoes_curtas: ["\\(...\\)", "$...$"],
+            bloco_central_para_expressoes_complexas: ["\\[...\\]", "$$...$$"]
+        },
+        campos_permitidos: ["pergunta", "opcao_a", "opcao_b", "opcao_c", "opcao_d", "explicacao"],
+        regras: [
+            "Escrever sempre o CODIGO-FONTE LaTeX puro, nunca a formula renderizada visualmente.",
+            "Nao usar saida formatada pelo chat para formulas. O texto deve conter caracteres literais como \\[, \\], \\(, \\), \\frac, \\begin{cases}, \\pi_1.",
+            "Toda expressao com comando LaTeX deve estar dentro de delimitadores validos; nunca escrever \\pi_1, \\left, \\frac ou \\mathbb soltos fora de \\(...\\) ou \\[...\\].",
+            "Preservar os delimitadores LaTeX no texto final.",
+            "Usar \\(...\\) somente para formulas curtas no meio de frases, como uma variavel, uma igualdade curta ou uma fracao simples.",
+            "Toda formula central, longa, matriz, sistema linear, determinante, forma parametrica extensa, equacao com varias linhas ou expressao com \\begin deve ficar sozinha em uma linha, centralizada por delimitadores de bloco.",
+            "Para formulas complexas no enunciado, escrever o texto introdutorio antes, depois uma quebra de linha, depois a formula em \\[...\\] ou $$...$$ sozinha, depois outra quebra de linha e continuar o enunciado.",
+            "Nunca colocar texto comum dentro dos delimitadores de bloco e nunca deixar texto antes ou depois da formula na mesma linha do bloco.",
+            "Para sistemas lineares, matrizes e vetores em bloco, usar ambientes LaTeX validos como \\begin{cases}...\\end{cases}, \\begin{bmatrix}...\\end{bmatrix} ou \\begin{pmatrix}...\\end{pmatrix}.",
+            "Nao escrever fracoes, expoentes, indices, matrizes ou vetores como texto empilhado em varias linhas; sempre usar comandos LaTeX como \\frac{7}{11}, x_0, \\mathbb{R}^3 e ambientes de matriz.",
+            "Em alternativas, preferir formulas curtas inline; se a alternativa exigir uma matriz ou expressao longa, usar bloco LaTeX sozinho dentro do campo.",
+            outputFormat === "csv"
+                ? "Manter CSV valido: envolver campos com virgulas, quebras de linha, aspas ou formulas complexas em aspas duplas; duplicar aspas internas quando necessario; entregar o CSV dentro de ```csv para preservar o LaTeX puro."
+                : "Manter JSON valido: escapar barras e aspas conforme necessario para que o JSON seja parseavel."
+        ]
+    };
+}
+
+function buildQuestionGenerationPayload({ theme, content, questionCount, questionType, outputFormat, sourceMode, includeMath = false }) {
+    const payload = {
         persona: "elaborador sênior de avaliações acadêmicas com expertise em design instrucional e psicometria",
         aviso_sistema: "O output será processado por um parser automatizado. Qualquer desvio de formato causa erro no sistema.",
         tarefa: "gerar_quiz_estruturado",
@@ -600,8 +728,14 @@ function buildQuestionGenerationPayload({ theme, content, questionCount, questio
             "Repetição de palavras do enunciado apenas na alternativa correta.",
             "Questões com pegadinhas baseadas em detalhes irrelevantes."
         ],
-        formato_saida: getOutputFormatConfig(outputFormat, questionCount)
+        formato_saida: getOutputFormatConfig(outputFormat, questionCount, includeMath)
     };
+
+    if (includeMath) {
+        payload.formulas_matematicas = getMathFormulaInstructions(outputFormat);
+    }
+
+    return payload;
 }
 
 // --- CSV HANDLING ---
@@ -617,6 +751,7 @@ function generateCSVPrompt() {
     const content = promptContent.value.trim();
     const questionType = promptQType.value;
     const questionCount = parseInt(promptCsvAmount.value, 10) || 10;
+    const includeMath = Boolean(promptIncludeMath?.checked);
 
     if (!theme && !content) {
         alert("Preencha o tema ou o conteúdo desejado.");
@@ -629,7 +764,8 @@ function generateCSVPrompt() {
         questionCount,
         questionType,
         outputFormat: "csv",
-        sourceMode: "ia_externa"
+        sourceMode: "ia_externa",
+        includeMath
     });
 
     promptResult.value = JSON.stringify(promptPayload, null, 2);
@@ -951,6 +1087,7 @@ async function handleAIGeneration() {
     const theme = aiTheme.value.trim();
     const requestedType = aiQType.value;
     const questionCount = parseInt(aiQAmount.value, 10) || 5;
+    const includeMath = Boolean(aiIncludeMath?.checked);
     const errorEl = document.getElementById("ai-error");
     const loadingEl = document.getElementById("ai-loading");
 
@@ -970,7 +1107,8 @@ async function handleAIGeneration() {
             questionCount,
             questionType: requestedType,
             outputFormat: "json",
-            sourceMode: "ia_nativa_do_site"
+            sourceMode: "ia_nativa_do_site",
+            includeMath
         });
 
         const rawContent = await requestStudyBuddyAI({
@@ -1090,7 +1228,7 @@ function renderSingleQuestion(index) {
         badgeContainer.innerHTML = `${createBadgeHTML(question.nivel)}${getQuestionTypeBadge(question.tipo)}`;
     }
 
-    questionTextEl.textContent = question.pergunta;
+    setMathText(questionTextEl, question.pergunta);
     optionsContainer.innerHTML = "";
     explanationContainer.classList.add("hidden");
 
@@ -1115,7 +1253,13 @@ function renderSingleQuestion(index) {
         options.forEach((option) => {
             const button = document.createElement("button");
             button.className = "option-btn";
-            button.innerHTML = `<span class="option-key">${option.key}.</span> ${escapeHtml(option.text)}`;
+            const optionKey = document.createElement("span");
+            optionKey.className = "option-key";
+            optionKey.textContent = `${option.key}.`;
+            const optionText = document.createElement("span");
+            optionText.className = "math-content option-text";
+            optionText.textContent = normalizeMathText(option.text);
+            button.append(optionKey, optionText);
 
             const hasAnsweredQuestion = hasAnswer(state.userAnswers[index]);
 
@@ -1143,10 +1287,11 @@ function renderSingleQuestion(index) {
             }
 
             optionsContainer.appendChild(button);
+            renderMathInElement(button);
         });
 
         if (state.settings.immediateFeedback && hasAnswer(state.userAnswers[index]) && question.explicacao) {
-            explanationText.textContent = question.explicacao;
+            setMathText(explanationText, question.explicacao);
             explanationContainer.classList.remove("hidden");
         }
     }
@@ -1203,7 +1348,9 @@ function renderAllQuestions() {
         questionBlock.className = "question-container question-block";
 
         const title = document.createElement("h3");
-        title.innerHTML = `${createBadgeHTML(question.nivel)}${getQuestionTypeBadge(question.tipo)}<br>${index + 1}. ${escapeHtml(question.pergunta)}`;
+        title.innerHTML = `${createBadgeHTML(question.nivel)}${getQuestionTypeBadge(question.tipo)}<br>`;
+        const questionTitleText = createMathTextElement("span", `${index + 1}. ${question.pergunta}`, "math-content");
+        title.appendChild(questionTitleText);
         questionBlock.appendChild(title);
 
         const optionsBlock = document.createElement("div");
@@ -1230,7 +1377,13 @@ function renderAllQuestions() {
             options.forEach((option) => {
                 const button = document.createElement("button");
                 button.className = "option-btn";
-                button.innerHTML = `<span class="option-key">${option.key}.</span> ${escapeHtml(option.text)}`;
+                const optionKey = document.createElement("span");
+                optionKey.className = "option-key";
+                optionKey.textContent = `${option.key}.`;
+                const optionText = document.createElement("span");
+                optionText.className = "math-content option-text";
+                optionText.textContent = normalizeMathText(option.text);
+                button.append(optionKey, optionText);
 
                 const selectedAnswer = state.userAnswers[index];
                 const hasAnsweredQuestion = hasAnswer(selectedAnswer);
@@ -1263,6 +1416,7 @@ function renderAllQuestions() {
                 }
 
                 optionsBlock.appendChild(button);
+                renderMathInElement(button);
             });
         }
 
@@ -1271,11 +1425,15 @@ function renderAllQuestions() {
         if (question.tipo !== "discursiva" && state.settings.immediateFeedback && hasAnswer(state.userAnswers[index]) && question.explicacao) {
             const explanation = document.createElement("div");
             explanation.className = "explanation-box";
-            explanation.innerHTML = `<h4>Explicação:</h4><p>${escapeHtml(question.explicacao)}</p>`;
+            const explanationTitle = document.createElement("h4");
+            explanationTitle.textContent = "Explicação:";
+            const explanationBody = createMathTextElement("p", question.explicacao, "math-content");
+            explanation.append(explanationTitle, explanationBody);
             questionBlock.appendChild(explanation);
         }
 
         allQuestionsList.appendChild(questionBlock);
+        renderMathInElement(questionBlock);
     });
 }
 
@@ -1303,9 +1461,7 @@ function createCorrectionElement(correction) {
     correctionBox.appendChild(title);
 
     if (correction.avaliacao) {
-        const summary = document.createElement("p");
-        summary.className = "ai-correction-summary";
-        summary.textContent = correction.avaliacao;
+        const summary = createMathTextElement("p", correction.avaliacao, "ai-correction-summary math-content");
         correctionBox.appendChild(summary);
     }
 
@@ -1318,8 +1474,7 @@ function createCorrectionElement(correction) {
         const strengthsList = document.createElement("ul");
         strengthsList.className = "ai-correction-list";
         correction.pontos_fortes.forEach((item) => {
-            const listItem = document.createElement("li");
-            listItem.textContent = item;
+            const listItem = createMathTextElement("li", item, "math-content");
             strengthsList.appendChild(listItem);
         });
         correctionBox.appendChild(strengthsList);
@@ -1334,27 +1489,23 @@ function createCorrectionElement(correction) {
         const gapsList = document.createElement("ul");
         gapsList.className = "ai-correction-list";
         correction.lacunas.forEach((item) => {
-            const listItem = document.createElement("li");
-            listItem.textContent = item;
+            const listItem = createMathTextElement("li", item, "math-content");
             gapsList.appendChild(listItem);
         });
         correctionBox.appendChild(gapsList);
     }
 
     if (correction.sugestao_melhoria) {
-        const improvement = document.createElement("p");
-        improvement.className = "ai-correction-tip";
-        improvement.textContent = `Como melhorar: ${correction.sugestao_melhoria}`;
+        const improvement = createMathTextElement("p", `Como melhorar: ${correction.sugestao_melhoria}`, "ai-correction-tip math-content");
         correctionBox.appendChild(improvement);
     }
 
     if (correction.resposta_esperada_resumida) {
-        const expected = document.createElement("p");
-        expected.className = "ai-correction-expected";
-        expected.textContent = `Resposta esperada em alto nível: ${correction.resposta_esperada_resumida}`;
+        const expected = createMathTextElement("p", `Resposta esperada em alto nível: ${correction.resposta_esperada_resumida}`, "ai-correction-expected math-content");
         correctionBox.appendChild(expected);
     }
 
+    renderMathInElement(correctionBox);
     return correctionBox;
 }
 
@@ -1372,8 +1523,7 @@ function calculateResults() {
         const item = document.createElement("div");
         item.className = "review-item";
 
-        const title = document.createElement("h4");
-        title.textContent = `${index + 1}. ${question.pergunta}`;
+        const title = createMathTextElement("h4", `${index + 1}. ${question.pergunta}`, "math-content");
         item.appendChild(title);
 
         const typeTag = document.createElement("div");
@@ -1390,7 +1540,7 @@ function calculateResults() {
 
             const answerBox = document.createElement("div");
             answerBox.className = "discursive-review";
-            answerBox.textContent = hasAnswer(userAnswer) ? userAnswer : "Não respondeu";
+            setMathText(answerBox, hasAnswer(userAnswer) ? userAnswer : "Não respondeu");
             item.appendChild(answerBox);
 
             if (state.discursiveCorrections[index]) {
@@ -1413,7 +1563,7 @@ function calculateResults() {
 
             if (hasAnswer(userAnswer)) {
                 const answerContent = question[`opcao_${String(userAnswer).toLowerCase()}`];
-                answerStatus.textContent = `Opção ${userAnswer} - ${answerContent}`;
+                setMathText(answerStatus, `Opção ${userAnswer} - ${answerContent}`);
             } else {
                 answerStatus.textContent = "Não respondeu";
             }
@@ -1426,7 +1576,7 @@ function calculateResults() {
                 const correctText = document.createElement("p");
                 const correctStatus = document.createElement("span");
                 correctStatus.className = "status acertou";
-                correctStatus.textContent = `Opção ${question.resposta_correta} - ${question[`opcao_${question.resposta_correta.toLowerCase()}`]}`;
+                setMathText(correctStatus, `Opção ${question.resposta_correta} - ${question[`opcao_${question.resposta_correta.toLowerCase()}`]}`);
                 correctText.textContent = "Resposta correta: ";
                 correctText.appendChild(correctStatus);
                 item.appendChild(correctText);
@@ -1434,13 +1584,12 @@ function calculateResults() {
         }
 
         if (question.explicacao) {
-            const explanation = document.createElement("p");
-            explanation.className = "exp";
-            explanation.textContent = `Explicação: ${question.explicacao}`;
+            const explanation = createMathTextElement("p", `Explicação: ${question.explicacao}`, "exp math-content");
             item.appendChild(explanation);
         }
 
         reviewList.appendChild(item);
+        renderMathInElement(item);
     });
 
     if (totalObjectives === 0) {

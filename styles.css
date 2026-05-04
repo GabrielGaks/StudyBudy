@@ -309,6 +309,18 @@ h2 {
     margin-bottom: 20px;
 }
 
+.math-toggle label {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    color: var(--text-main);
+    font-weight: 600;
+}
+
+.math-toggle input[type="checkbox"] {
+    width: auto;
+}
+
 .row-group {
     display: flex;
     align-items: center;
@@ -436,6 +448,7 @@ select:focus {
     cursor: pointer;
     transition: var(--transition);
     color: var(--text-main);
+    overflow-x: auto;
 }
 
 .option-btn:hover:not(:disabled) {
@@ -468,6 +481,11 @@ select:focus {
 .option-key {
     font-weight: 700;
     margin-right: 8px;
+    display: inline-block;
+}
+
+.option-text {
+    overflow-wrap: anywhere;
 }
 
 .explanation-box {
@@ -477,6 +495,30 @@ select:focus {
     border-left: 4px solid var(--warning);
     border-radius: 10px;
     animation: fadeIn 0.4s;
+}
+
+.math-content {
+    overflow-wrap: anywhere;
+    white-space: pre-wrap;
+}
+
+.math-content mjx-container,
+.option-btn mjx-container,
+.explanation-box mjx-container,
+.review-item mjx-container,
+.ai-correction-box mjx-container {
+    max-width: 100%;
+    overflow-x: auto;
+    overflow-y: hidden;
+}
+
+.math-content mjx-container[display="true"],
+.explanation-box mjx-container[display="true"],
+.review-item mjx-container[display="true"],
+.ai-correction-box mjx-container[display="true"] {
+    margin: 12px 0;
+    padding-bottom: 4px;
+    text-align: center;
 }
 
 .score-summary {

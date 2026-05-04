@@ -5,6 +5,19 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Study Buddy</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script>
+        window.MathJax = {
+            tex: {
+                inlineMath: [["\\(", "\\)"], ["$", "$"]],
+                displayMath: [["\\[", "\\]"], ["$$", "$$"]],
+                processEscapes: true
+            },
+            startup: {
+                typeset: false
+            }
+        };
+    </script>
+    <script defer src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js"></script>
     <link rel="stylesheet" href="styles.css">
 </head>
 <body>
@@ -58,6 +71,13 @@
 
             <div class="form-group">
                 <textarea id="prompt-content" placeholder="Especifique o conteúdo (ex: Mitose e meiose)" rows="3"></textarea>
+            </div>
+
+            <div class="form-group math-toggle">
+                <label>
+                    <input type="checkbox" id="prompt-include-math">
+                    Incluir fórmulas matemáticas
+                </label>
             </div>
 
             <button class="btn btn-primary full-width" id="btn-generate-prompt">Montar Prompt</button>
@@ -124,6 +144,13 @@
                     <option value="mistas">Mistas (Objetivas, Discursivas e V/F)</option>
                     <option value="verdadeiro_falso">Verdadeiro ou Falso</option>
                 </select>
+            </div>
+
+            <div class="form-group math-toggle">
+                <label>
+                    <input type="checkbox" id="ai-include-math">
+                    Incluir fórmulas matemáticas
+                </label>
             </div>
 
             <div id="ai-error" class="error-text hidden"></div>
