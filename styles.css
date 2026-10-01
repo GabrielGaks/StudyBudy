@@ -1,20 +1,21 @@
 :root {
-    --primary: #2563eb;
-    --primary-hover: #1d4ed8;
-    --bg: #eef2ff;
+    --primary: #0071e3;
+    --primary-hover: #0077ed;
+    --bg: #f5f5f7;
     --card-bg: #ffffff;
-    --text-main: #172554;
-    --text-sec: #475569;
-    --border: #dbe4ff;
-    --success: #10b981;
-    --success-bg: #d1fae5;
-    --danger: #ef4444;
-    --danger-bg: #fee2e2;
-    --warning: #f59e0b;
-    --warning-bg: #fef3c7;
-    --radius: 18px;
-    --shadow: 0 20px 40px rgba(37, 99, 235, 0.12);
-    --transition: all 0.25s ease;
+    --surface-muted: #f5f5f7;
+    --text-main: #1d1d1f;
+    --text-sec: #6e6e73;
+    --border: #d2d2d7;
+    --success: #248a3d;
+    --success-bg: #eef8f0;
+    --danger: #d70015;
+    --danger-bg: #fff1f2;
+    --warning: #a05a00;
+    --warning-bg: #fff8eb;
+    --radius: 16px;
+    --shadow: 0 18px 55px rgba(0, 0, 0, 0.08);
+    --transition: 180ms ease;
 }
 
 * {
@@ -24,13 +25,11 @@
 }
 
 body {
-    font-family: "Inter", sans-serif;
-    background:
-        radial-gradient(circle at top left, rgba(37, 99, 235, 0.14), transparent 35%),
-        linear-gradient(180deg, #f8fbff 0%, var(--bg) 100%);
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", "Segoe UI", sans-serif;
+    background: var(--bg);
     color: var(--text-main);
-    line-height: 1.5;
-    padding: 24px;
+    line-height: 1.47;
+    padding: 28px 20px 48px;
     min-height: 100vh;
     display: flex;
     flex-direction: column;
@@ -39,20 +38,38 @@ body {
 
 header {
     width: 100%;
-    max-width: 920px;
-    margin-bottom: 28px;
-    text-align: center;
+    max-width: 860px;
+    margin-bottom: 22px;
 }
 
 .header-container {
-    padding: 16px 0 4px;
+    padding: 10px 4px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.brand-mark {
+    width: 42px;
+    height: 42px;
+    border-radius: 12px;
+    display: grid;
+    place-items: center;
+    color: #fff;
+    background: var(--primary);
+    box-shadow: 0 5px 16px rgba(0, 113, 227, 0.2);
+}
+
+.brand-mark iconify-icon {
+    font-size: 23px;
 }
 
 header h1 {
-    font-size: clamp(2.4rem, 5vw, 3.4rem);
+    font-size: 1.55rem;
     color: var(--text-main);
-    font-weight: 700;
-    letter-spacing: -0.04em;
+    font-weight: 650;
+    letter-spacing: -0.035em;
+    line-height: 1.05;
 }
 
 header h1 span {
@@ -61,18 +78,18 @@ header h1 span {
 
 header p {
     color: var(--text-sec);
-    font-size: 1.05rem;
+    font-size: 0.86rem;
+    margin-top: 4px;
 }
 
 main {
     width: 100%;
-    max-width: 920px;
-    background: rgba(255, 255, 255, 0.92);
-    backdrop-filter: blur(14px);
-    border: 1px solid rgba(255, 255, 255, 0.8);
-    border-radius: 28px;
+    max-width: 860px;
+    background: var(--card-bg);
+    border: 1px solid rgba(0, 0, 0, 0.06);
+    border-radius: 24px;
     box-shadow: var(--shadow);
-    padding: 32px;
+    padding: 36px;
     position: relative;
     overflow: hidden;
 }
@@ -106,7 +123,7 @@ main {
 }
 
 .screen {
-    animation: fadeIn 0.35s ease;
+    animation: fadeIn 0.24s ease;
 }
 
 @keyframes fadeIn {
@@ -122,8 +139,10 @@ main {
 }
 
 h2 {
-    font-size: clamp(1.6rem, 3vw, 2rem);
-    margin-bottom: 12px;
+    font-size: clamp(1.7rem, 3vw, 2.15rem);
+    line-height: 1.12;
+    letter-spacing: -0.035em;
+    margin-bottom: 10px;
 }
 
 .section-intro {
@@ -139,10 +158,11 @@ h2 {
 }
 
 .btn {
-    padding: 12px 20px;
-    border-radius: 12px;
+    min-height: 42px;
+    padding: 10px 18px;
+    border-radius: 999px;
     font-weight: 600;
-    font-size: 1rem;
+    font-size: 0.94rem;
     cursor: pointer;
     border: none;
     transition: var(--transition);
@@ -156,23 +176,27 @@ h2 {
     transform: translateY(-1px);
 }
 
+.btn:active {
+    transform: scale(0.98);
+}
+
 .btn-primary {
-    background: linear-gradient(135deg, var(--primary) 0%, #3b82f6 100%);
+    background: var(--primary);
     color: #fff;
 }
 
 .btn-primary:hover {
-    background: linear-gradient(135deg, var(--primary-hover) 0%, var(--primary) 100%);
+    background: var(--primary-hover);
 }
 
 .btn-outline {
-    background-color: transparent;
+    background-color: #fff;
     color: var(--primary);
-    border: 2px solid rgba(37, 99, 235, 0.22);
+    border: 1px solid var(--border);
 }
 
 .btn-outline:hover {
-    background-color: rgba(37, 99, 235, 0.06);
+    background-color: var(--surface-muted);
 }
 
 .btn-success {
@@ -187,7 +211,9 @@ h2 {
 .btn-link {
     background: transparent;
     color: var(--primary);
-    padding: 4px 0;
+    min-height: auto;
+    padding: 7px 10px;
+    font-size: 0.86rem;
 }
 
 .btn-link:hover {
@@ -217,50 +243,77 @@ h2 {
 }
 
 .cards-container {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 22px;
-    margin-top: 22px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-top: 26px;
 }
 
 .card {
-    border: 1px solid var(--border);
-    background:
-        linear-gradient(180deg, rgba(255, 255, 255, 0.96) 0%, rgba(241, 245, 255, 0.92) 100%);
-    border-radius: 22px;
-    padding: 26px;
-    text-align: center;
+    border: 1px solid rgba(0, 0, 0, 0.06);
+    background: var(--surface-muted);
+    border-radius: var(--radius);
+    padding: 16px;
+    text-align: left;
     transition: var(--transition);
-    display: flex;
-    flex-direction: column;
+    display: grid;
+    grid-template-columns: 48px minmax(0, 1fr) auto;
     align-items: center;
-    min-height: 280px;
+    gap: 16px;
+    min-height: 92px;
 }
 
 .card:hover {
-    border-color: rgba(37, 99, 235, 0.25);
-    box-shadow: 0 18px 36px rgba(37, 99, 235, 0.12);
+    border-color: rgba(0, 113, 227, 0.25);
+    background: #f8f8fa;
+    transform: translateY(-1px);
 }
 
 .card-icon {
-    font-size: 3rem;
-    margin-bottom: 16px;
+    width: 48px;
+    height: 48px;
+    border-radius: 14px;
+    display: grid;
+    place-items: center;
+    font-size: 25px;
+    color: var(--primary);
+    background: #fff;
+    border: 1px solid rgba(0, 0, 0, 0.06);
+}
+
+iconify-icon {
+    display: inline-block;
+    width: 1em;
+    height: 1em;
 }
 
 .card h3 {
-    margin-bottom: 10px;
+    font-size: 1rem;
+    letter-spacing: -0.012em;
+    margin-bottom: 4px;
 }
 
 .card p {
     color: var(--text-sec);
-    margin-bottom: 20px;
-    flex-grow: 1;
+    margin: 0;
+    font-size: 0.9rem;
+    max-width: 46ch;
+}
+
+.card-actions {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.card-actions .btn {
+    white-space: nowrap;
 }
 
 .csv-requirements,
 .config-panel,
 .question-block {
-    background: #f8fbff;
+    background: var(--surface-muted);
     border: 1px solid var(--border);
     border-radius: var(--radius);
     padding: 20px;
@@ -282,6 +335,43 @@ h2 {
 .paste-csv-box {
     margin-top: 12px;
     text-align: left;
+}
+
+.upload-panel {
+    background: var(--surface-muted);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 18px;
+}
+
+.file-help {
+    margin-top: 8px;
+    color: var(--text-sec);
+    font-size: 0.86rem;
+}
+
+.upload-panel .helper-text {
+    margin-top: 10px;
+    text-align: left;
+}
+
+.style-summary {
+    margin: 18px 0;
+    padding: 16px 18px;
+    border: 1px solid var(--border);
+    border-left: 4px solid var(--primary);
+    border-radius: 12px;
+    background: var(--surface-muted);
+    color: var(--text-main);
+    white-space: pre-wrap;
+}
+
+.style-summary::before {
+    content: "Estilo identificado";
+    display: block;
+    margin-bottom: 6px;
+    color: var(--primary);
+    font-weight: 700;
 }
 
 .import-action-buttons,
@@ -333,12 +423,12 @@ input[type="text"],
 select {
     width: 100%;
     padding: 13px 14px;
-    border: 1px solid #cbd5e1;
+    border: 1px solid transparent;
     border-radius: 12px;
     font-family: inherit;
     font-size: 1rem;
     transition: var(--transition);
-    background: #fff;
+    background: var(--surface-muted);
 }
 
 textarea:focus,
@@ -346,7 +436,7 @@ input:focus,
 select:focus {
     outline: none;
     border-color: var(--primary);
-    box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.14);
+    box-shadow: 0 0 0 4px rgba(0, 113, 227, 0.14);
 }
 
 .config-panel {
@@ -401,7 +491,7 @@ select:focus {
 .progress-bar {
     width: 100%;
     height: 10px;
-    background: #dbeafe;
+    background: #e5e5ea;
     border-radius: 999px;
     overflow: hidden;
     margin-bottom: 10px;
@@ -409,7 +499,7 @@ select:focus {
 
 .progress-fill {
     height: 100%;
-    background: linear-gradient(90deg, var(--primary) 0%, #60a5fa 100%);
+    background: var(--primary);
     width: 0%;
     transition: width 0.3s ease;
 }
@@ -452,13 +542,13 @@ select:focus {
 }
 
 .option-btn:hover:not(:disabled) {
-    border-color: rgba(37, 99, 235, 0.4);
-    background: #f4f8ff;
+    border-color: rgba(0, 113, 227, 0.38);
+    background: var(--surface-muted);
 }
 
 .option-btn.selected {
     border-color: var(--primary);
-    background: #eff6ff;
+    background: #eef6ff;
 }
 
 .option-btn.correct {
@@ -647,7 +737,7 @@ select:focus {
 .spinner {
     width: 52px;
     height: 52px;
-    border: 5px solid #dbeafe;
+    border: 5px solid #e5e5ea;
     border-top: 5px solid var(--primary);
     border-radius: 50%;
     animation: spin 1s linear infinite;
@@ -682,7 +772,7 @@ select:focus {
 
 .clicked-pulse {
     animation: pulseSelect 0.35s ease-in-out;
-    background-color: #eff6ff !important;
+    background-color: #eef6ff !important;
     border-color: var(--primary) !important;
 }
 
@@ -727,9 +817,9 @@ select:focus {
 }
 
 .badge-objetiva {
-    background: #dbeafe;
-    color: #1d4ed8;
-    border: 1px solid #93c5fd;
+    background: #eef6ff;
+    color: #0058b0;
+    border: 1px solid #b8d8f8;
 }
 
 .badge-discursiva {
@@ -752,14 +842,14 @@ select:focus {
     font-size: 1rem;
     resize: vertical;
     transition: var(--transition);
-    background-color: #f8fbff;
+    background-color: var(--surface-muted);
 }
 
 .discursive-answer:focus {
     outline: none;
     border-color: var(--primary);
     background-color: #fff;
-    box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.14);
+    box-shadow: 0 0 0 4px rgba(0, 113, 227, 0.14);
 }
 
 .discursive-review {
@@ -787,13 +877,13 @@ select:focus {
     text-align: center;
     padding: 10px 12px;
     border-radius: 12px;
-    background: #eff6ff;
-    color: #1d4ed8;
+    background: #eef6ff;
+    color: #0058b0;
 }
 
 .status-loading {
-    background: #eff6ff;
-    color: #1d4ed8;
+    background: #eef6ff;
+    color: #0058b0;
 }
 
 .status-success {
@@ -810,14 +900,14 @@ select:focus {
     margin-top: 14px;
     padding: 14px;
     border-radius: 12px;
-    background: linear-gradient(180deg, #f8fafc 0%, #eef4ff 100%);
-    border: 1px solid #c7d2fe;
+    background: var(--surface-muted);
+    border: 1px solid var(--border);
 }
 
 .ai-correction-box h5 {
     margin-bottom: 8px;
     font-size: 0.98rem;
-    color: #1e3a8a;
+    color: var(--text-main);
 }
 
 .ai-correction-summary,
@@ -830,7 +920,7 @@ select:focus {
 .ai-correction-label {
     margin-top: 10px;
     font-weight: 700;
-    color: #1e3a8a;
+    color: var(--text-main);
 }
 
 .ai-correction-list {
@@ -844,8 +934,8 @@ select:focus {
 }
 
 code {
-    background: #e0e7ff;
-    color: #1e3a8a;
+    background: #f2f2f7;
+    color: #3a3a3c;
     padding: 2px 6px;
     border-radius: 6px;
     font-size: 0.92em;
@@ -868,12 +958,32 @@ code {
     }
 
     main {
-        padding: 22px 18px;
-        border-radius: 22px;
+        padding: 24px 18px;
+        border-radius: 20px;
     }
 
-    .cards-container {
-        grid-template-columns: 1fr;
+    .header-container {
+        padding-inline: 2px;
+    }
+
+    .card {
+        grid-template-columns: 44px minmax(0, 1fr);
+        gap: 13px;
+    }
+
+    .card-icon {
+        width: 44px;
+        height: 44px;
+        border-radius: 12px;
+    }
+
+    .card-actions {
+        grid-column: 1 / -1;
+        width: 100%;
+    }
+
+    .card-actions .btn-primary {
+        flex: 1;
     }
 
     .row-group,
@@ -887,5 +997,16 @@ code {
     .actions .btn,
     .result-secondary-actions .btn {
         width: 100%;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+        scroll-behavior: auto !important;
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
     }
 }

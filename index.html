@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Study Buddy</title>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script defer src="https://code.iconify.design/iconify-icon/3.0.0/iconify-icon.min.js"></script>
     <script>
         window.MathJax = {
             tex: {
@@ -23,29 +23,65 @@
 <body>
     <header>
         <div class="header-container">
-            <h1>Study<span>Buddy</span></h1>
-            <p>O seu gerador de conhecimento</p>
+            <div class="brand-mark" aria-hidden="true">
+                <iconify-icon icon="ph:book-open-text"></iconify-icon>
+            </div>
+            <div>
+                <h1>Study<span>Buddy</span></h1>
+                <p>Estudo inteligente, do seu jeito.</p>
+            </div>
         </div>
     </header>
 
     <main id="app">
         <section id="screen-home" class="screen active">
-            <h2>Bem-vindo! Escolha a fonte das perguntas</h2>
+            <h2>Como você quer começar?</h2>
+            <p class="section-intro home-intro">Escolha uma fonte para preparar seu próximo quiz.</p>
 
             <div class="cards-container">
                 <div class="card" id="card-csv">
-                    <div class="card-icon">📁</div>
-                    <h3>Importar via CSV (passo a passo)</h3>
-                    <p>Gere um prompt para IA, obtenha o CSV e depois importe-o em dois passos simples.</p>
-                    <button class="btn btn-primary full-width" id="btn-start-csv">Começar</button>
-                    <button class="btn btn-link mt-2" id="btn-skip-to-import">Já tenho um CSV →</button>
+                    <div class="card-icon" aria-hidden="true"><iconify-icon icon="ph:file-csv"></iconify-icon></div>
+                    <div class="card-copy">
+                        <h3>Importar via CSV</h3>
+                        <p>Monte um prompt ou use um arquivo que você já possui.</p>
+                    </div>
+                    <div class="card-actions">
+                        <button class="btn btn-primary" id="btn-start-csv">Começar</button>
+                        <button class="btn btn-link" id="btn-skip-to-import">Importar existente</button>
+                    </div>
                 </div>
 
                 <div class="card" id="card-ai">
-                    <div class="card-icon">🤖</div>
-                    <h3>Gerar com IA</h3>
-                    <p>Cole um texto e nossa IA criará o quiz para você automaticamente.</p>
-                    <button class="btn btn-primary full-width" id="btn-goto-ai">Inserir Texto</button>
+                    <div class="card-icon" aria-hidden="true"><iconify-icon icon="ph:sparkle"></iconify-icon></div>
+                    <div class="card-copy">
+                        <h3>Gerar com IA</h3>
+                        <p>Transforme um texto de estudo em perguntas automaticamente.</p>
+                    </div>
+                    <div class="card-actions">
+                        <button class="btn btn-primary" id="btn-goto-ai">Inserir texto</button>
+                    </div>
+                </div>
+
+                <div class="card" id="card-remake">
+                    <div class="card-icon" aria-hidden="true"><iconify-icon icon="ph:stack"></iconify-icon></div>
+                    <div class="card-copy">
+                        <h3>Remake do professor</h3>
+                        <p>Use materiais e provas anteriores para preservar o estilo das questões.</p>
+                    </div>
+                    <div class="card-actions">
+                        <button class="btn btn-primary" id="btn-goto-remake">Criar remake</button>
+                    </div>
+                </div>
+
+                <div class="card" id="card-rounding">
+                    <div class="card-icon" aria-hidden="true"><iconify-icon icon="ph:approximate-equals"></iconify-icon></div>
+                    <div class="card-copy">
+                        <h3>Arredondar exercícios</h3>
+                        <p>Envie uma lista e transforme números decimais em inteiros.</p>
+                    </div>
+                    <div class="card-actions">
+                        <button class="btn btn-primary" id="btn-goto-rounding">Enviar documento</button>
+                    </div>
                 </div>
             </div>
         </section>
@@ -71,6 +107,10 @@
 
             <div class="form-group">
                 <textarea id="prompt-content" placeholder="Especifique o conteúdo (ex: Mitose e meiose)" rows="3"></textarea>
+                <input type="file" id="prompt-content-file" accept=".pdf,.docx,.txt,.md,.csv,.json" class="hidden">
+                <button type="button" class="btn btn-outline full-width mt-2" id="btn-prompt-content-file">Anexar documento</button>
+                <p class="file-help">PDF com texto, DOCX, TXT, Markdown, CSV ou JSON. Limite de 10 MB.</p>
+                <div id="prompt-content-status" class="helper-text hidden" role="status"></div>
             </div>
 
             <div class="form-group math-toggle">
@@ -80,11 +120,18 @@
                 </label>
             </div>
 
+            <div class="form-group math-toggle">
+                <label>
+                    <input type="checkbox" id="prompt-avoid-repeats">
+                    Reforçar tópicos errados sem repetir perguntas
+                </label>
+            </div>
+
             <button class="btn btn-primary full-width" id="btn-generate-prompt">Montar Prompt</button>
 
             <div id="prompt-result-container" class="hidden mt-4">
                 <textarea id="prompt-result" rows="12" readonly class="readonly-textarea"></textarea>
-                <button class="btn btn-outline full-width mt-2" id="btn-copy-prompt">📋 Copiar para Prancheta</button>
+                <button class="btn btn-outline full-width mt-2" id="btn-copy-prompt">Copiar para a área de transferência</button>
                 <button class="btn btn-primary full-width mt-2 hidden" id="btn-go-csv-import">Continuar para importar CSV →</button>
             </div>
         </section>
@@ -106,8 +153,8 @@
             <input type="file" id="csv-input" accept=".csv" class="hidden">
 
             <div class="import-action-buttons mt-4">
-                <button class="btn btn-primary full-width" id="btn-upload-csv">📂 Importar arquivo CSV</button>
-                <button class="btn btn-outline full-width" id="btn-show-paste-csv">📋 Colar CSV</button>
+                <button class="btn btn-primary full-width" id="btn-upload-csv">Selecionar arquivo CSV</button>
+                <button class="btn btn-outline full-width" id="btn-show-paste-csv">Colar CSV</button>
             </div>
 
             <div id="paste-csv-box" class="paste-csv-box full-width hidden mt-2">
@@ -163,9 +210,123 @@
             </div>
         </section>
 
+        <section id="screen-remake" class="screen hidden">
+            <button class="btn-icon btn-back" data-target="home">← Voltar</button>
+            <h2>Remake das Questões do Professor</h2>
+            <p class="section-intro">A IA usará o material como fonte do conteúdo e as questões anteriores apenas como referência de estilo.</p>
+
+            <div class="form-group">
+                <label for="remake-theme" class="field-label">Tema ou disciplina</label>
+                <input type="text" id="remake-theme" placeholder="Ex: Biologia — genética mendeliana">
+            </div>
+
+            <div class="upload-panel form-group">
+                <label for="remake-content" class="field-label">1. Conteúdo do professor</label>
+                <textarea id="remake-content" rows="7" placeholder="Cole aqui o conteúdo que poderá ser cobrado ou anexe os arquivos abaixo."></textarea>
+                <input type="file" id="remake-content-files" accept=".pdf,.docx,.txt,.md,.csv,.json" multiple class="hidden">
+                <button type="button" class="btn btn-outline full-width mt-2" id="btn-remake-content-files">Anexar material</button>
+                <p class="file-help">PDF com texto, DOCX, TXT, Markdown, CSV ou JSON.</p>
+                <div id="remake-content-status" class="helper-text hidden" role="status"></div>
+            </div>
+
+            <div class="upload-panel form-group">
+                <label for="remake-examples" class="field-label">2. Questões anteriores</label>
+                <textarea id="remake-examples" rows="9" placeholder="Cole questões já aplicadas pelo professor ou anexe uma ou mais listas/provas."></textarea>
+                <input type="file" id="remake-example-files" accept=".pdf,.docx,.txt,.md,.csv,.json" multiple class="hidden">
+                <button type="button" class="btn btn-outline full-width mt-2" id="btn-remake-example-files">Anexar questões-modelo</button>
+                <p class="file-help">Quanto mais exemplos, melhor a identificação do padrão.</p>
+                <div id="remake-examples-status" class="helper-text hidden" role="status"></div>
+            </div>
+
+            <div class="form-group row-group">
+                <div class="grow-1">
+                    <label for="remake-q-amount" class="field-label">Quantidade</label>
+                    <input type="number" id="remake-q-amount" min="1" max="30" value="10">
+                </div>
+                <div class="grow-2">
+                    <label for="remake-q-type" class="field-label">Tipo de questões</label>
+                    <select id="remake-q-type">
+                        <option value="objetivas">Apenas Objetivas</option>
+                        <option value="discursivas">Apenas Discursivas</option>
+                        <option value="mistas">Mistas (Objetivas, Discursivas e V/F)</option>
+                        <option value="verdadeiro_falso">Verdadeiro ou Falso</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="remake-fidelity" class="field-label">Fidelidade ao estilo</label>
+                <select id="remake-fidelity">
+                    <option value="alta">Alta — seguir de perto estrutura, tom e dificuldade</option>
+                    <option value="equilibrada" selected>Equilibrada — preservar o estilo com alguma variedade</option>
+                    <option value="livre">Livre — usar o estilo apenas como inspiração</option>
+                </select>
+            </div>
+
+            <div class="form-group math-toggle">
+                <label>
+                    <input type="checkbox" id="remake-include-math">
+                    Preservar e usar fórmulas matemáticas quando necessário
+                </label>
+            </div>
+
+            <div id="remake-error" class="error-text hidden" role="alert"></div>
+            <button class="btn btn-primary full-width" id="btn-generate-remake">Analisar Estilo e Gerar Remake</button>
+            <button class="btn btn-outline full-width mt-2" id="btn-copy-remake-prompt">Copiar prompt para IA externa</button>
+
+            <div id="remake-external-box" class="paste-csv-box full-width hidden mt-2">
+                <p class="file-help">Cole o prompt em outra IA. Depois, cole abaixo toda a resposta JSON que ela gerar.</p>
+                <textarea id="remake-external-response" rows="10" placeholder="Cole aqui a resposta completa da IA externa..."></textarea>
+                <button class="btn btn-success full-width mt-2" id="btn-import-remake-response">Usar resposta colada</button>
+                <div id="remake-external-status" class="helper-text hidden" role="status"></div>
+            </div>
+
+            <div id="remake-loading" class="loading-overlay hidden">
+                <div class="spinner"></div>
+                <p>Analisando o estilo do professor e criando questões inéditas...</p>
+            </div>
+        </section>
+
+        <section id="screen-rounding" class="screen hidden">
+            <button class="btn-icon btn-back" data-target="home">← Voltar</button>
+            <h2>Arredondar exercícios</h2>
+            <p class="section-intro">Envie o documento, copie o prompt para sua IA externa e cole aqui a resposta revisada.</p>
+
+            <div class="upload-panel form-group">
+                <label for="rounding-file" class="field-label">Documento com as questões</label>
+                <input type="file" id="rounding-file" accept=".pdf,.docx,.txt,.md,.csv,.json" class="hidden">
+                <button type="button" class="btn btn-primary full-width" id="btn-rounding-file">Selecionar documento</button>
+                <p class="file-help">PDF com texto, DOCX, TXT, Markdown, CSV ou JSON. Limite de 10 MB.</p>
+                <div id="rounding-status" class="helper-text hidden" role="status"></div>
+            </div>
+
+            <div id="rounding-prompt-container" class="hidden">
+                <label for="rounding-prompt" class="field-label">Prompt para IA externa</label>
+                <textarea id="rounding-prompt" rows="14" readonly class="readonly-textarea"></textarea>
+                <button class="btn btn-primary full-width mt-2" id="btn-copy-rounding-prompt">Copiar prompt</button>
+
+                <div class="paste-csv-box full-width mt-4">
+                    <label for="rounding-external-response" class="field-label">Resposta da IA externa</label>
+                    <textarea id="rounding-external-response" rows="12" placeholder="Cole aqui o documento revisado pela IA externa..."></textarea>
+                    <button class="btn btn-outline full-width mt-2" id="btn-import-rounding-response">Usar resposta colada</button>
+                </div>
+            </div>
+
+            <div id="rounding-result-container" class="hidden mt-4">
+                <label for="rounding-result" class="field-label">Documento revisado</label>
+                <textarea id="rounding-result" rows="14" readonly class="readonly-textarea"></textarea>
+                <div class="result-secondary-actions mt-2">
+                    <button class="btn btn-outline" id="btn-copy-rounding">Copiar texto</button>
+                    <button class="btn btn-primary" id="btn-download-rounding">Baixar TXT</button>
+                </div>
+            </div>
+        </section>
+
         <section id="screen-config" class="screen hidden">
             <button class="btn-icon btn-back" data-target="home">← Voltar Home</button>
             <h2>Configurações do Quiz</h2>
+
+            <div id="remake-style-summary" class="style-summary hidden" aria-live="polite"></div>
 
             <div class="config-panel">
                 <div class="config-item">
@@ -199,7 +360,7 @@
             </div>
 
             <div class="actions">
-                <button class="btn btn-primary big-btn" id="btn-start-quiz">Começar Quiz 🔥</button>
+                <button class="btn btn-primary big-btn" id="btn-start-quiz">Começar quiz</button>
             </div>
         </section>
 
@@ -277,6 +438,8 @@
         </section>
     </main>
 
+    <script src="https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/mammoth@1.8.0/mammoth.browser.min.js"></script>
     <script src="script.js"></script>
 </body>
 </html>
