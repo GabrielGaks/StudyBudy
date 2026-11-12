@@ -19,7 +19,6 @@ const OPTION_KEYS = ["A", "B", "C", "D"];
 const MAX_UPLOAD_BYTES = 10 * 1024 * 1024;
 const HF_ROUTER_URL = "https://router.huggingface.co/v1/chat/completions";
 const HF_MODEL = "google/gemma-4-31B-it:fastest";
-const HF_TOKEN = "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";
 const QUESTION_TYPE_MAP = {
     objetivas: "objetiva",
     objetiva: "objetiva",
@@ -1114,10 +1113,16 @@ function parseCSV(text) {
 
 // --- AI HELPERS ---
 function getHuggingFaceToken() {
-    const token = window.HF_TOKEN || localStorage.getItem("hf_token") || HF_TOKEN || "";
+    // O token é do usuário e fica só no navegador dele; nunca no código.
+    let token = localStorage.getItem("hf_token") || "";
 
-    if (!token || token === "YOUR_HUGGINGFACE_TOKEN_HERE") {
-        throw new Error("Defina seu token do Hugging Face no frontend.");
+    if (!token) {
+        token = (window.prompt("Cole seu token do Hugging Face (fica salvo apenas neste navegador):") || "").trim();
+        if (token) localStorage.setItem("hf_token", token);
+    }
+
+    if (!token) {
+        throw new Error("Informe um token do Hugging Face para usar a IA nativa.");
     }
 
     return token;
@@ -1190,6 +1195,7 @@ async function requestStudyBuddyAI({ systemPrompt, userPayload, temperature = 0.
     });
 
     if (!response.ok) {
+        if (response.status === 401) localStorage.removeItem("hf_token"); // token inválido: pede de novo na próxima
         let errorMessage = "Falha na comunicação com a Study Buddy AI.";
 
         try {
